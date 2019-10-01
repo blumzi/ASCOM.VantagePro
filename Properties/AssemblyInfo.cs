@@ -8,10 +8,10 @@ using System.Runtime.InteropServices;
 //
 // TODO - Add your authorship information here
 [assembly: AssemblyTitle("ASCOM.VantagePro.ObservingConditions")]
-[assembly: AssemblyDescription("ASCOM ObservingConditions driver for VantagePro")]
+[assembly: AssemblyDescription("ASCOM ObservingConditions driver for VantagePro2")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("The ASCOM Initiative")]
-[assembly: AssemblyProduct("ASCOM ObservingConditions driver for VantagePro")]
+[assembly: AssemblyProduct("ASCOM ObservingConditions driver for VantagePro2")]
 [assembly: AssemblyCopyright("Copyright © 2019 The ASCOM Initiative")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

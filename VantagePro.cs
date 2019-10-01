@@ -12,14 +12,16 @@ using ASCOM.Utilities;
 using Weather;
 using Newtonsoft.Json;
 
+using Git;
+
 
 namespace ASCOM.VantagePro
 {
     public class VantagePro: WeatherStation
     {
         private string _dataFile;
-        private static Version version = new Version("0.2");
-        private static string driverDescription = string.Format("ASCOM VantagePro v{0}", version.ToString());
+        private static string version = Git.Commit.VersionTag;
+        private static string driverDescription = string.Format("ASCOM VantagePro2 {0}", version);
         private Util util = new Util();
 
         public enum OpMode { File, Serial };
@@ -48,7 +50,7 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public string DriverId
+        public static string DriverId
         {
             get
             {
@@ -353,7 +355,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return "Wrapper for VantagePro Report file. Version: " + String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
+                return "VantagePro2 Report File or Serial Port driver, " +  version;
             }
         }
 
@@ -361,7 +363,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return String.Format(CultureInfo.InvariantCulture, "{0}.{1}", version.Major, version.Minor);
+                return version;
             }
         }
 

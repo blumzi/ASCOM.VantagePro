@@ -60,17 +60,6 @@ namespace ASCOM.VantagePro
     [ClassInterface(ClassInterfaceType.None)]
     public class ObservingConditions : IObservingConditions
     {
-        /// <summary>
-        /// ASCOM DeviceID (COM ProgID) for this driver.
-        /// The DeviceID is used by ASCOM applications to load the driver at runtime.
-        /// </summary>
-        internal static string driverID = "ASCOM.VantagePro.ObservingConditions";
-        // TODO Change the descriptive string for your driver then remove this line
-        /// <summary>
-        /// Driver description that displays in the ASCOM Chooser.
-        /// </summary>
-        private static string driverDescription = "ASCOM ObservingConditions Driver for VantagePro.";
-
         internal static string traceStateProfileName = "Trace Level";
         internal static string traceStateDefault = "false";
 
@@ -576,11 +565,11 @@ namespace ASCOM.VantagePro
                 P.DeviceType = "ObservingConditions";
                 if (bRegister)
                 {
-                    P.Register(driverID, driverDescription);
+                    P.Register(VantagePro.DriverId, VantagePro.DriverDescription);
                 }
                 else
                 {
-                    P.Unregister(driverID);
+                    P.Unregister(VantagePro.DriverId);
                 }
             }
         }

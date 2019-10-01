@@ -48,8 +48,9 @@ namespace ASCOM.VantagePro
             // cmdOK
             // 
             this.cmdOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmdOK.CausesValidation = false;
             this.cmdOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.cmdOK.Location = new System.Drawing.Point(399, 153);
+            this.cmdOK.Location = new System.Drawing.Point(538, 153);
             this.cmdOK.Name = "cmdOK";
             this.cmdOK.Size = new System.Drawing.Size(59, 24);
             this.cmdOK.TabIndex = 0;
@@ -61,7 +62,7 @@ namespace ASCOM.VantagePro
             // 
             this.cmdCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cmdCancel.Location = new System.Drawing.Point(399, 183);
+            this.cmdCancel.Location = new System.Drawing.Point(538, 183);
             this.cmdCancel.Name = "cmdCancel";
             this.cmdCancel.Size = new System.Drawing.Size(59, 25);
             this.cmdCancel.TabIndex = 1;
@@ -72,7 +73,7 @@ namespace ASCOM.VantagePro
             // label1
             // 
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(73, 5);
+            this.label1.Location = new System.Drawing.Point(175, 9);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(277, 60);
             this.label1.TabIndex = 2;
@@ -85,7 +86,7 @@ namespace ASCOM.VantagePro
             this.picASCOM.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.picASCOM.Cursor = System.Windows.Forms.Cursors.Hand;
             this.picASCOM.Image = global::ASCOM.VantagePro.Properties.Resources.ASCOM;
-            this.picASCOM.Location = new System.Drawing.Point(410, 9);
+            this.picASCOM.Location = new System.Drawing.Point(549, 9);
             this.picASCOM.Name = "picASCOM";
             this.picASCOM.Size = new System.Drawing.Size(48, 56);
             this.picASCOM.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
@@ -168,14 +169,14 @@ namespace ASCOM.VantagePro
             // 
             this.textBoxReportFile.Location = new System.Drawing.Point(209, 90);
             this.textBoxReportFile.Name = "textBoxReportFile";
-            this.textBoxReportFile.Size = new System.Drawing.Size(249, 20);
+            this.textBoxReportFile.Size = new System.Drawing.Size(386, 20);
             this.textBoxReportFile.TabIndex = 12;
             // 
             // labelStatus
             // 
             this.labelStatus.Location = new System.Drawing.Point(15, 183);
             this.labelStatus.Name = "labelStatus";
-            this.labelStatus.Size = new System.Drawing.Size(378, 23);
+            this.labelStatus.Size = new System.Drawing.Size(503, 23);
             this.labelStatus.TabIndex = 13;
             this.labelStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
@@ -183,7 +184,7 @@ namespace ASCOM.VantagePro
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(468, 220);
+            this.ClientSize = new System.Drawing.Size(607, 220);
             this.Controls.Add(this.labelStatus);
             this.Controls.Add(this.textBoxReportFile);
             this.Controls.Add(this.label3);
