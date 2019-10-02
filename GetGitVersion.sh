@@ -2,15 +2,16 @@
 
 export PATH=${PATH}:/usr/bin
 
-tag="$(git describe --tags)"
+versionTag="$(git describe --tags --abbrev=0)"
 commitHash="$(git rev-parse HEAD)"
+originUrl="$(git remote get-url --push origin)"
 
 cat << EOF > Version.cs
 namespace Git {
-    class Commit {
-        public static string VersionTag { get; set; } = "${tag}";
-        public static string Hash { get; set; } = "${commitHash}";
+    class Latest {
+        public static string VersionTag { get; set; } = "${versionTag}";
+        public static string CommitHash { get; set; } = "${commitHash}";
+        public static string OriginUrl { get; set; } = "${originUrl}/releases/tag/${versionTag}";
     }
 }
 EOF
-

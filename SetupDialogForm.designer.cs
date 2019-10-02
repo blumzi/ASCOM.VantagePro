@@ -41,6 +41,7 @@ namespace ASCOM.VantagePro
             this.label3 = new System.Windows.Forms.Label();
             this.textBoxReportFile = new System.Windows.Forms.TextBox();
             this.labelStatus = new System.Windows.Forms.Label();
+            this.radioButtonNone = new System.Windows.Forms.RadioButton();
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.groupBoxOpMode.SuspendLayout();
             this.SuspendLayout();
@@ -50,7 +51,7 @@ namespace ASCOM.VantagePro
             this.cmdOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdOK.CausesValidation = false;
             this.cmdOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.cmdOK.Location = new System.Drawing.Point(538, 153);
+            this.cmdOK.Location = new System.Drawing.Point(538, 178);
             this.cmdOK.Name = "cmdOK";
             this.cmdOK.Size = new System.Drawing.Size(59, 24);
             this.cmdOK.TabIndex = 0;
@@ -62,7 +63,7 @@ namespace ASCOM.VantagePro
             // 
             this.cmdCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cmdCancel.Location = new System.Drawing.Point(538, 183);
+            this.cmdCancel.Location = new System.Drawing.Point(538, 208);
             this.cmdCancel.Name = "cmdCancel";
             this.cmdCancel.Size = new System.Drawing.Size(59, 25);
             this.cmdCancel.TabIndex = 1;
@@ -98,7 +99,7 @@ namespace ASCOM.VantagePro
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(145, 116);
+            this.label2.Location = new System.Drawing.Point(145, 137);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(58, 13);
             this.label2.TabIndex = 5;
@@ -107,8 +108,7 @@ namespace ASCOM.VantagePro
             // chkTrace
             // 
             this.chkTrace.AutoSize = true;
-            this.chkTrace.CheckAlign = System.Drawing.ContentAlignment.MiddleRight;
-            this.chkTrace.Location = new System.Drawing.Point(15, 157);
+            this.chkTrace.Location = new System.Drawing.Point(37, 178);
             this.chkTrace.Name = "chkTrace";
             this.chkTrace.Size = new System.Drawing.Size(69, 17);
             this.chkTrace.TabIndex = 6;
@@ -118,7 +118,7 @@ namespace ASCOM.VantagePro
             // comboBoxComPort
             // 
             this.comboBoxComPort.FormattingEnabled = true;
-            this.comboBoxComPort.Location = new System.Drawing.Point(209, 113);
+            this.comboBoxComPort.Location = new System.Drawing.Point(209, 134);
             this.comboBoxComPort.Name = "comboBoxComPort";
             this.comboBoxComPort.Size = new System.Drawing.Size(90, 21);
             this.comboBoxComPort.TabIndex = 7;
@@ -126,32 +126,31 @@ namespace ASCOM.VantagePro
             // radioButtonDataFile
             // 
             this.radioButtonDataFile.AutoSize = true;
-            this.radioButtonDataFile.Location = new System.Drawing.Point(23, 19);
+            this.radioButtonDataFile.Location = new System.Drawing.Point(22, 42);
             this.radioButtonDataFile.Name = "radioButtonDataFile";
             this.radioButtonDataFile.Size = new System.Drawing.Size(76, 17);
             this.radioButtonDataFile.TabIndex = 8;
-            this.radioButtonDataFile.TabStop = true;
             this.radioButtonDataFile.Text = "Report File";
             this.radioButtonDataFile.UseVisualStyleBackColor = true;
             // 
             // radioButtonSerialPort
             // 
             this.radioButtonSerialPort.AutoSize = true;
-            this.radioButtonSerialPort.Location = new System.Drawing.Point(23, 42);
+            this.radioButtonSerialPort.Location = new System.Drawing.Point(22, 65);
             this.radioButtonSerialPort.Name = "radioButtonSerialPort";
             this.radioButtonSerialPort.Size = new System.Drawing.Size(73, 17);
             this.radioButtonSerialPort.TabIndex = 9;
-            this.radioButtonSerialPort.TabStop = true;
             this.radioButtonSerialPort.Text = "Serial Port";
             this.radioButtonSerialPort.UseVisualStyleBackColor = true;
             // 
             // groupBoxOpMode
             // 
+            this.groupBoxOpMode.Controls.Add(this.radioButtonNone);
             this.groupBoxOpMode.Controls.Add(this.radioButtonDataFile);
             this.groupBoxOpMode.Controls.Add(this.radioButtonSerialPort);
             this.groupBoxOpMode.Location = new System.Drawing.Point(15, 72);
             this.groupBoxOpMode.Name = "groupBoxOpMode";
-            this.groupBoxOpMode.Size = new System.Drawing.Size(120, 70);
+            this.groupBoxOpMode.Size = new System.Drawing.Size(120, 98);
             this.groupBoxOpMode.TabIndex = 10;
             this.groupBoxOpMode.TabStop = false;
             this.groupBoxOpMode.Text = " Operational mode ";
@@ -159,7 +158,7 @@ namespace ASCOM.VantagePro
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(145, 93);
+            this.label3.Location = new System.Drawing.Point(145, 114);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(58, 13);
             this.label3.TabIndex = 11;
@@ -167,24 +166,36 @@ namespace ASCOM.VantagePro
             // 
             // textBoxReportFile
             // 
-            this.textBoxReportFile.Location = new System.Drawing.Point(209, 90);
+            this.textBoxReportFile.Location = new System.Drawing.Point(209, 111);
             this.textBoxReportFile.Name = "textBoxReportFile";
             this.textBoxReportFile.Size = new System.Drawing.Size(386, 20);
             this.textBoxReportFile.TabIndex = 12;
             // 
             // labelStatus
             // 
-            this.labelStatus.Location = new System.Drawing.Point(15, 183);
+            this.labelStatus.Location = new System.Drawing.Point(15, 208);
             this.labelStatus.Name = "labelStatus";
-            this.labelStatus.Size = new System.Drawing.Size(503, 23);
+            this.labelStatus.Size = new System.Drawing.Size(500, 23);
             this.labelStatus.TabIndex = 13;
             this.labelStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            // 
+            // radioButtonNone
+            // 
+            this.radioButtonNone.AutoSize = true;
+            this.radioButtonNone.Checked = true;
+            this.radioButtonNone.Location = new System.Drawing.Point(22, 21);
+            this.radioButtonNone.Name = "radioButtonNone";
+            this.radioButtonNone.Size = new System.Drawing.Size(51, 17);
+            this.radioButtonNone.TabIndex = 10;
+            this.radioButtonNone.TabStop = true;
+            this.radioButtonNone.Text = "None";
+            this.radioButtonNone.UseVisualStyleBackColor = true;
             // 
             // SetupDialogForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(607, 220);
+            this.ClientSize = new System.Drawing.Size(607, 245);
             this.Controls.Add(this.labelStatus);
             this.Controls.Add(this.textBoxReportFile);
             this.Controls.Add(this.label3);
@@ -226,5 +237,6 @@ namespace ASCOM.VantagePro
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox textBoxReportFile;
         private System.Windows.Forms.Label labelStatus;
+        private System.Windows.Forms.RadioButton radioButtonNone;
     }
 }

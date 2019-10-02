@@ -29,6 +29,9 @@ namespace ASCOM.VantagePro
         {
             bool ok = true;
 
+            if (radioButtonNone.Checked)
+                return;
+
             if (radioButtonSerialPort.Checked)
             {
                 string[] ports = System.IO.Ports.SerialPort.GetPortNames();
@@ -60,12 +63,7 @@ namespace ASCOM.VantagePro
                     ok = false;
                 }
             }
-            else
-            {
-                labelStatus.Text = "One of the radio buttons must be checked";
-                labelStatus.ForeColor = Color.Red;
-                ok = false;
-            }
+
             ObservingConditions.tl.Enabled = chkTrace.Checked;
 
             if (ok)
@@ -106,10 +104,18 @@ namespace ASCOM.VantagePro
                 comboBoxComPort.SelectedItem = vantagePro.PortName;
             }
 
-            VantagePro.OpMode opMode = vantagePro.OperationalMode;
-
-            radioButtonDataFile.Checked = opMode == VantagePro.OpMode.File;
-            radioButtonSerialPort.Checked = opMode == VantagePro.OpMode.Serial;
+            switch(vantagePro.OperationalMode)
+            {
+                case VantagePro.OpMode.None:
+                    radioButtonNone.Checked = true;
+                    break;
+                case VantagePro.OpMode.File:
+                    radioButtonDataFile.Checked = true;
+                    break;
+                case VantagePro.OpMode.Serial:
+                    radioButtonSerialPort.Checked = true;
+                    break;
+            }
 
             textBoxReportFile.Text = vantagePro.DataFile;
         }

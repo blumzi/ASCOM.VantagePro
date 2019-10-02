@@ -20,12 +20,12 @@ namespace ASCOM.VantagePro
     public class VantagePro: WeatherStation
     {
         private string _dataFile;
-        private static string version = Git.Commit.VersionTag;
-        private static string driverDescription = string.Format("ASCOM VantagePro2 {0}", version);
+        private static string version = Git.Latest.VersionTag;
+        private static string driverDescription = $"ASCOM VantagePro2 {version}";
         private Util util = new Util();
 
-        public enum OpMode { File, Serial };
-        public OpMode _opMode = VantagePro.OpMode.File;
+        public enum OpMode { None, File, Serial };
+        public OpMode _opMode = VantagePro.OpMode.None;
 
         public string _portName = null;
         public int _portSpeed = 19200;
@@ -80,9 +80,9 @@ namespace ASCOM.VantagePro
         /// </summary>
         public void Refresh()
         {
-            if (_opMode == OpMode.File)
+            if (OperationalMode == OpMode.File)
                 RefreshFromDatafile();
-            else
+            else if (OperationalMode == OpMode.Serial)
                 RefreshFromSerialPort();
         }
 
@@ -109,7 +109,7 @@ namespace ASCOM.VantagePro
                     return;
             }
 
-            if (_lastDataRead == DateTime.MinValue || File.GetLastWriteTime(_dataFile).CompareTo(_lastDataRead) > 0)
+            if (_lastDataRead == DateTime.MinValue || File.GetLastWriteTime(DataFile).CompareTo(_lastDataRead) > 0)
             {
                 if (sensorData == null)
                     sensorData = new Dictionary<string, string>();
@@ -118,13 +118,13 @@ namespace ASCOM.VantagePro
                 {
                     try
                     {
-                        using (StreamReader sr = new StreamReader(_dataFile))
+                        using (StreamReader sr = new StreamReader(DataFile))
                         {
                             string[] words;
                             string line;
 
                             if (sr == null)
-                                throw new InvalidValueException(string.Format("Refresh: cannot open \"{0}\" for read.", _dataFile));
+                                throw new InvalidValueException($"Refresh: cannot open \"{DataFile}\" for read.");
 
                             while ((line = sr.ReadLine()) != null)
                             {
@@ -270,7 +270,7 @@ namespace ASCOM.VantagePro
                 if (value == _connected)
                     return;
 
-                if (_opMode == OpMode.Serial)
+                if (OperationalMode == OpMode.Serial)
                 {
                     if (value == true)
                         TryOpenPort();
@@ -322,7 +322,7 @@ namespace ASCOM.VantagePro
                     return Forecast;
 
                 default:
-                    throw new ASCOM.ActionNotImplementedException("Action " + action + " is not implemented by this driver");
+                    throw new ASCOM.ActionNotImplementedException($"Action {action} is not implemented by this driver");
             }
             return ret;
         }
@@ -355,7 +355,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return "VantagePro2 Report File or Serial Port driver, " +  version;
+                return $"VantagePro2 Report File or Serial Port driver {DriverVersion} ({Git.Latest.OriginUrl})";
             }
         }
 
@@ -372,16 +372,16 @@ namespace ASCOM.VantagePro
         /// </summary>
         internal void ReadProfile()
         {
-            string defaultReportFile = "C:/Weather/Davis VantagePro/Weather_Vantage_Pro.htm";
+            // string defaultReportFile = "C:/Weather/Davis VantagePro/Weather_Vantage_Pro.htm";
 
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
                 OpMode mode;
 
                 Enum.TryParse<OpMode>(driverProfile.GetValue(DriverId, VantagePro_OpMode, string.Empty, OpMode.File.ToString()), out mode);
-                _opMode = mode;
-                _dataFile = driverProfile.GetValue(DriverId, VantagePro_DataFile, string.Empty, defaultReportFile);
-                _portName = driverProfile.GetValue(DriverId, VantagePro_SerialPort, string.Empty, "");
+                OperationalMode = mode;
+                DataFile = driverProfile.GetValue(DriverId, VantagePro_DataFile, string.Empty, "");
+                PortName = driverProfile.GetValue(DriverId, VantagePro_SerialPort, string.Empty, "");
             }
         }
 
@@ -392,9 +392,9 @@ namespace ASCOM.VantagePro
         {
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
-                driverProfile.WriteValue(DriverId, VantagePro_OpMode, _opMode.ToString());
-                driverProfile.WriteValue(DriverId, VantagePro_DataFile, _dataFile);
-                driverProfile.WriteValue(DriverId, VantagePro_SerialPort, _portName);
+                driverProfile.WriteValue(DriverId, VantagePro_OpMode, OperationalMode.ToString());
+                driverProfile.WriteValue(DriverId, VantagePro_DataFile, DataFile);
+                driverProfile.WriteValue(DriverId, VantagePro_SerialPort, PortName);
             }
         }
 
@@ -642,7 +642,7 @@ namespace ASCOM.VantagePro
             Refresh();
 
             double seconds = 0.0;
-            if (_opMode == OpMode.File)
+            if (OperationalMode == OpMode.File)
             {
                 string dateTime = sensorData["utcDate"] + " " + sensorData["utcTime"] + "m";
                 DateTime lastUpdate = Convert.ToDateTime(dateTime);
