@@ -270,6 +270,9 @@ namespace ASCOM.VantagePro
                 if (value == _connected)
                     return;
 
+                if (OperationalMode == OpMode.None)
+                    _connected = false;
+
                 if (OperationalMode == OpMode.Serial)
                 {
                     if (value == true)
@@ -277,8 +280,12 @@ namespace ASCOM.VantagePro
                     else
                         _port.Close();
                     _connected = _port.IsOpen;
-                } else
-                    _connected = value;
+                }
+                else if (OperationalMode == OpMode.File)
+                {
+                    if (value == true)
+                        _connected = DataFile != null && DataFile != "" && File.Exists(DataFile);
+                }
             }
         }
 
@@ -311,7 +318,7 @@ namespace ASCOM.VantagePro
             switch (action)
             {
                 case "OCHTag":
-                    ret = "Wise40.VantagePro2";
+                    ret = "VantagePro";
                     break;
 
                 case "raw-data":
@@ -355,7 +362,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return $"VantagePro2 Report File or Serial Port driver {DriverVersion} ({Git.Latest.OriginUrl})";
+                return $"{Name} Report File or Serial Port driver {DriverVersion} ({Git.Latest.OriginUrl})";
             }
         }
 

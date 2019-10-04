@@ -38,10 +38,11 @@ namespace ASCOM.VantagePro
             this.radioButtonDataFile = new System.Windows.Forms.RadioButton();
             this.radioButtonSerialPort = new System.Windows.Forms.RadioButton();
             this.groupBoxOpMode = new System.Windows.Forms.GroupBox();
+            this.radioButtonNone = new System.Windows.Forms.RadioButton();
             this.label3 = new System.Windows.Forms.Label();
             this.textBoxReportFile = new System.Windows.Forms.TextBox();
-            this.labelStatus = new System.Windows.Forms.Label();
-            this.radioButtonNone = new System.Windows.Forms.RadioButton();
+            this.openFileDialogReportFile = new System.Windows.Forms.OpenFileDialog();
+            this.buttonChooser = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.groupBoxOpMode.SuspendLayout();
             this.SuspendLayout();
@@ -51,7 +52,7 @@ namespace ASCOM.VantagePro
             this.cmdOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdOK.CausesValidation = false;
             this.cmdOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.cmdOK.Location = new System.Drawing.Point(538, 178);
+            this.cmdOK.Location = new System.Drawing.Point(538, 152);
             this.cmdOK.Name = "cmdOK";
             this.cmdOK.Size = new System.Drawing.Size(59, 24);
             this.cmdOK.TabIndex = 0;
@@ -63,7 +64,7 @@ namespace ASCOM.VantagePro
             // 
             this.cmdCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cmdCancel.Location = new System.Drawing.Point(538, 208);
+            this.cmdCancel.Location = new System.Drawing.Point(538, 182);
             this.cmdCancel.Name = "cmdCancel";
             this.cmdCancel.Size = new System.Drawing.Size(59, 25);
             this.cmdCancel.TabIndex = 1;
@@ -155,6 +156,18 @@ namespace ASCOM.VantagePro
             this.groupBoxOpMode.TabStop = false;
             this.groupBoxOpMode.Text = " Operational mode ";
             // 
+            // radioButtonNone
+            // 
+            this.radioButtonNone.AutoSize = true;
+            this.radioButtonNone.Checked = true;
+            this.radioButtonNone.Location = new System.Drawing.Point(22, 21);
+            this.radioButtonNone.Name = "radioButtonNone";
+            this.radioButtonNone.Size = new System.Drawing.Size(51, 17);
+            this.radioButtonNone.TabIndex = 10;
+            this.radioButtonNone.TabStop = true;
+            this.radioButtonNone.Text = "None";
+            this.radioButtonNone.UseVisualStyleBackColor = true;
+            // 
             // label3
             // 
             this.label3.AutoSize = true;
@@ -168,35 +181,33 @@ namespace ASCOM.VantagePro
             // 
             this.textBoxReportFile.Location = new System.Drawing.Point(209, 111);
             this.textBoxReportFile.Name = "textBoxReportFile";
-            this.textBoxReportFile.Size = new System.Drawing.Size(386, 20);
+            this.textBoxReportFile.Size = new System.Drawing.Size(322, 20);
             this.textBoxReportFile.TabIndex = 12;
             // 
-            // labelStatus
+            // openFileDialogReportFile
             // 
-            this.labelStatus.Location = new System.Drawing.Point(15, 208);
-            this.labelStatus.Name = "labelStatus";
-            this.labelStatus.Size = new System.Drawing.Size(500, 23);
-            this.labelStatus.TabIndex = 13;
-            this.labelStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.openFileDialogReportFile.DefaultExt = "htm";
+            this.openFileDialogReportFile.Title = "WeatherLink report file";
+            this.openFileDialogReportFile.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialogReportFile_FileOk);
             // 
-            // radioButtonNone
+            // buttonChooser
             // 
-            this.radioButtonNone.AutoSize = true;
-            this.radioButtonNone.Checked = true;
-            this.radioButtonNone.Location = new System.Drawing.Point(22, 21);
-            this.radioButtonNone.Name = "radioButtonNone";
-            this.radioButtonNone.Size = new System.Drawing.Size(51, 17);
-            this.radioButtonNone.TabIndex = 10;
-            this.radioButtonNone.TabStop = true;
-            this.radioButtonNone.Text = "None";
-            this.radioButtonNone.UseVisualStyleBackColor = true;
+            this.buttonChooser.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.buttonChooser.CausesValidation = false;
+            this.buttonChooser.Location = new System.Drawing.Point(538, 110);
+            this.buttonChooser.Name = "buttonChooser";
+            this.buttonChooser.Size = new System.Drawing.Size(59, 25);
+            this.buttonChooser.TabIndex = 14;
+            this.buttonChooser.Text = "Choose";
+            this.buttonChooser.UseVisualStyleBackColor = true;
+            this.buttonChooser.Click += new System.EventHandler(this.buttonChooser_Click);
             // 
             // SetupDialogForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(607, 245);
-            this.Controls.Add(this.labelStatus);
+            this.ClientSize = new System.Drawing.Size(607, 219);
+            this.Controls.Add(this.buttonChooser);
             this.Controls.Add(this.textBoxReportFile);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.groupBoxOpMode);
@@ -236,7 +247,8 @@ namespace ASCOM.VantagePro
         private System.Windows.Forms.GroupBox groupBoxOpMode;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.TextBox textBoxReportFile;
-        private System.Windows.Forms.Label labelStatus;
         private System.Windows.Forms.RadioButton radioButtonNone;
+        private System.Windows.Forms.OpenFileDialog openFileDialogReportFile;
+        private System.Windows.Forms.Button buttonChooser;
     }
 }

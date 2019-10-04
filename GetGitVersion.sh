@@ -11,7 +11,7 @@ namespace Git {
     class Latest {
         public static string VersionTag { get; set; } = "${versionTag}";
         public static string CommitHash { get; set; } = "${commitHash}";
-        public static string OriginUrl { get; set; } = "${originUrl}/releases/tag/${versionTag}";
+        public static string OriginUrl { get; set; } = "${originUrl%.git}/releases/tag/${versionTag}";
     }
 }
 EOF

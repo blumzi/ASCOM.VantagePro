@@ -42,12 +42,6 @@ namespace ASCOM.VantagePro
                     vantagePro.PortName = (string)comboBoxComPort.SelectedItem;
                     vantagePro.OperationalMode = VantagePro.OpMode.Serial;
                 }
-                else
-                {
-                    labelStatus.Text = "Invalid serial port name";
-                    labelStatus.ForeColor = Color.Red;
-                    ok = false;
-                }
             }
             else if (radioButtonDataFile.Checked)
             {
@@ -56,13 +50,9 @@ namespace ASCOM.VantagePro
                     vantagePro.DataFile = textBoxReportFile.Text;
                     vantagePro.OperationalMode = VantagePro.OpMode.File;
                 }
-                else
-                {
-                    labelStatus.Text = "Invalid report file name";
-                    labelStatus.ForeColor = Color.Red;
-                    ok = false;
-                }
             }
+            else
+                ok = false;
 
             ObservingConditions.tl.Enabled = chkTrace.Checked;
 
@@ -118,6 +108,16 @@ namespace ASCOM.VantagePro
             }
 
             textBoxReportFile.Text = vantagePro.DataFile;
+        }
+
+        private void buttonChooser_Click(object sender, EventArgs e)
+        {
+            openFileDialogReportFile.ShowDialog();
+        }
+
+        private void openFileDialogReportFile_FileOk(object sender, CancelEventArgs e)
+        {
+            textBoxReportFile.Text = (sender as OpenFileDialog).FileName;
         }
     }
 }

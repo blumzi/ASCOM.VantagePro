@@ -118,6 +118,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="VantagePro Setup.iss" />
     <None Include="app.config" />
     <None Include="ASCOM.png" />
     <None Include="ASCOMDriverTemplate.snk" />
@@ -130,7 +131,9 @@
     </None>
     <Content Include="ASCOM.ico" />
     <Content Include="Files\Weather_Vantage_Pro.htm" />
-    <Content Include="ReadMe.htm" />
+    <None Include="VantageProReadMe.md">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="Resources\ASCOM.bmp" />
   </ItemGroup>
   <ItemGroup>
