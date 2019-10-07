@@ -131,9 +131,7 @@
     </None>
     <Content Include="ASCOM.ico" />
     <Content Include="Files\Weather_Vantage_Pro.htm" />
-    <None Include="VantageProReadMe.md">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="Readme.md" />
     <None Include="Resources\ASCOM.bmp" />
   </ItemGroup>
   <ItemGroup>
@@ -159,8 +157,7 @@
 C:\cygwin64\bin\bash.exe GetGitVersion.sh</PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>"C:\Program Files (x86)\Inno Setup 5\ISCC.exe" "/DSolutionDir=$(SolutionDir)"  /O"$(SolutionDir)\Solution Items" "$(ProjectDir)\VantagePro Setup.iss</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
