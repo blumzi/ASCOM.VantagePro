@@ -122,6 +122,7 @@
     <None Include="app.config" />
     <None Include="ASCOM.png" />
     <None Include="ASCOMDriverTemplate.snk" />
+    <None Include="COPYING" />
     <None Include="Files\Weather_Vantage_Pro.htx" />
     <None Include="GetGitVersion.sh" />
     <None Include="packages.config" />
