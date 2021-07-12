@@ -10,7 +10,7 @@ enjoying _WeatherLink_'s capabilities while gaining **ASCOM** compatibility.
 ## Operational modes
 Two operational modes are selectable via the driver's _Setup_ window
 
-### The *WeatherLink* operational mode
+### *WeatherLink* report
 
 In this mode the *WeatherLink* software is set-up to periodically prepare an *HTML* report-file (minimal interval is 1 minute), based on
 a user-supplied template.
@@ -19,10 +19,13 @@ The template supplied with the driver exposes all the internal data elements mai
 
 The driver periodically parses the report-file (a valid path must be provided at *Setup* time) and presents it in **ASCOM** *ObservingConditions* protocol.
 
-### The serial-port operational mode
+### Serial-port
 In this mode the driver will directly connect to the station and get the relevant data (the serial-port, e.g. _**COM1**_, is supplied at _Setup_ time).
 
 In this mode the *WeatherLink* software cannot be used, as it will no longer get access to the serial port.
+
+### WeatherLinkIP
+In this mode the driver will connect directly to the station's IP address and port (settable in the Setup form)
 
 ## Weather properties
 The driver exposes the following _ObservingConditions_ properties:
