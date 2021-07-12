@@ -8,7 +8,7 @@ data is presented in an **ASCOM** _ObservingConditions_ compliant manner.  This 
 enjoying _WeatherLink_'s capabilities while gaining **ASCOM** compatibility.
 
 ## Operational modes
-Two operational modes are selectable via the driver's _Setup_ window
+Three operational modes are selectable via the driver's _Setup_ window
 
 ### *WeatherLink* report
 
@@ -25,7 +25,7 @@ In this mode the driver will directly connect to the station and get the relevan
 In this mode the *WeatherLink* software cannot be used, as it will no longer get access to the serial port.
 
 ### WeatherLinkIP
-In this mode the driver will connect directly to the station's IP address and port (settable in the Setup form)
+In this mode the driver will connect directly to the station's IP address and port (settable in the _Setup_ form)
 
 ## Weather properties
 The driver exposes the following _ObservingConditions_ properties:
