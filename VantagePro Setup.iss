@@ -5,19 +5,19 @@
 [Setup]
 AppID={{43b538d0-0d73-47a0-9552-f60f9898e943}
 AppName=ASCOM VantagePro ObservingConditions Driver
-AppVerName=ASCOM VantagePro ObservingConditions Driver 1.0.1
-AppVersion=1.0.1
+AppVersion=1.2
+AppVerName=ASCOM VantagePro ObservingConditions Driver 1.2
 AppPublisher=Arie Blumenzweig <theblumz@gmail.com>
 AppPublisherURL=mailto:theblumz@gmail.com
 AppSupportURL=http://tech.groups.yahoo.com/group/ASCOM-Talk/
 AppUpdatesURL=http://ascom-standards.org/
-VersionInfoVersion=1.0.0
+VersionInfoVersion=1.2
 MinVersion=0,5.0.2195sp4
 DefaultDirName="{cf}\ASCOM\ObservingConditions"
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 OutputDir="."
-OutputBaseFilename="VantagePro Setup"
+OutputBaseFilename="VantagePro Setup 1.2"
 Compression=lzma
 SolidCompression=yes
 ; Put there by Platform if Driver Installer Support selected

@@ -35,14 +35,20 @@ namespace ASCOM.VantagePro
             this.label2 = new System.Windows.Forms.Label();
             this.chkTrace = new System.Windows.Forms.CheckBox();
             this.comboBoxComPort = new System.Windows.Forms.ComboBox();
-            this.radioButtonDataFile = new System.Windows.Forms.RadioButton();
+            this.radioButtonReportFile = new System.Windows.Forms.RadioButton();
             this.radioButtonSerialPort = new System.Windows.Forms.RadioButton();
             this.groupBoxOpMode = new System.Windows.Forms.GroupBox();
+            this.radioButtonIP = new System.Windows.Forms.RadioButton();
             this.radioButtonNone = new System.Windows.Forms.RadioButton();
             this.label3 = new System.Windows.Forms.Label();
             this.textBoxReportFile = new System.Windows.Forms.TextBox();
             this.openFileDialogReportFile = new System.Windows.Forms.OpenFileDialog();
             this.buttonChooser = new System.Windows.Forms.Button();
+            this.label4 = new System.Windows.Forms.Label();
+            this.textBoxIPAddress = new System.Windows.Forms.TextBox();
+            this.textBoxIPPort = new System.Windows.Forms.TextBox();
+            this.label5 = new System.Windows.Forms.Label();
+            this.labelTracePath = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.groupBoxOpMode.SuspendLayout();
             this.SuspendLayout();
@@ -52,7 +58,7 @@ namespace ASCOM.VantagePro
             this.cmdOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdOK.CausesValidation = false;
             this.cmdOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.cmdOK.Location = new System.Drawing.Point(538, 152);
+            this.cmdOK.Location = new System.Drawing.Point(538, 157);
             this.cmdOK.Name = "cmdOK";
             this.cmdOK.Size = new System.Drawing.Size(59, 24);
             this.cmdOK.TabIndex = 0;
@@ -64,7 +70,7 @@ namespace ASCOM.VantagePro
             // 
             this.cmdCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cmdCancel.Location = new System.Drawing.Point(538, 182);
+            this.cmdCancel.Location = new System.Drawing.Point(538, 187);
             this.cmdCancel.Name = "cmdCancel";
             this.cmdCancel.Size = new System.Drawing.Size(59, 25);
             this.cmdCancel.TabIndex = 1;
@@ -109,12 +115,13 @@ namespace ASCOM.VantagePro
             // chkTrace
             // 
             this.chkTrace.AutoSize = true;
-            this.chkTrace.Location = new System.Drawing.Point(37, 178);
+            this.chkTrace.Location = new System.Drawing.Point(37, 200);
             this.chkTrace.Name = "chkTrace";
             this.chkTrace.Size = new System.Drawing.Size(69, 17);
             this.chkTrace.TabIndex = 6;
             this.chkTrace.Text = "Trace on";
             this.chkTrace.UseVisualStyleBackColor = true;
+            this.chkTrace.CheckedChanged += new System.EventHandler(this.chkTrace_CheckedChanged);
             // 
             // comboBoxComPort
             // 
@@ -124,15 +131,16 @@ namespace ASCOM.VantagePro
             this.comboBoxComPort.Size = new System.Drawing.Size(90, 21);
             this.comboBoxComPort.TabIndex = 7;
             // 
-            // radioButtonDataFile
+            // radioButtonReportFile
             // 
-            this.radioButtonDataFile.AutoSize = true;
-            this.radioButtonDataFile.Location = new System.Drawing.Point(22, 42);
-            this.radioButtonDataFile.Name = "radioButtonDataFile";
-            this.radioButtonDataFile.Size = new System.Drawing.Size(76, 17);
-            this.radioButtonDataFile.TabIndex = 8;
-            this.radioButtonDataFile.Text = "Report File";
-            this.radioButtonDataFile.UseVisualStyleBackColor = true;
+            this.radioButtonReportFile.AutoSize = true;
+            this.radioButtonReportFile.Location = new System.Drawing.Point(22, 42);
+            this.radioButtonReportFile.Name = "radioButtonReportFile";
+            this.radioButtonReportFile.Size = new System.Drawing.Size(76, 17);
+            this.radioButtonReportFile.TabIndex = 8;
+            this.radioButtonReportFile.Text = "Report File";
+            this.radioButtonReportFile.UseVisualStyleBackColor = true;
+            this.radioButtonReportFile.CheckedChanged += new System.EventHandler(this.radioButtonReportFile_CheckedChanged);
             // 
             // radioButtonSerialPort
             // 
@@ -143,18 +151,31 @@ namespace ASCOM.VantagePro
             this.radioButtonSerialPort.TabIndex = 9;
             this.radioButtonSerialPort.Text = "Serial Port";
             this.radioButtonSerialPort.UseVisualStyleBackColor = true;
+            this.radioButtonSerialPort.CheckedChanged += new System.EventHandler(this.radioButtonSerialPort_CheckedChanged);
             // 
             // groupBoxOpMode
             // 
+            this.groupBoxOpMode.Controls.Add(this.radioButtonIP);
             this.groupBoxOpMode.Controls.Add(this.radioButtonNone);
-            this.groupBoxOpMode.Controls.Add(this.radioButtonDataFile);
+            this.groupBoxOpMode.Controls.Add(this.radioButtonReportFile);
             this.groupBoxOpMode.Controls.Add(this.radioButtonSerialPort);
             this.groupBoxOpMode.Location = new System.Drawing.Point(15, 72);
             this.groupBoxOpMode.Name = "groupBoxOpMode";
-            this.groupBoxOpMode.Size = new System.Drawing.Size(120, 98);
+            this.groupBoxOpMode.Size = new System.Drawing.Size(120, 121);
             this.groupBoxOpMode.TabIndex = 10;
             this.groupBoxOpMode.TabStop = false;
             this.groupBoxOpMode.Text = " Operational mode ";
+            // 
+            // radioButtonIP
+            // 
+            this.radioButtonIP.AutoSize = true;
+            this.radioButtonIP.Location = new System.Drawing.Point(22, 89);
+            this.radioButtonIP.Name = "radioButtonIP";
+            this.radioButtonIP.Size = new System.Drawing.Size(35, 17);
+            this.radioButtonIP.TabIndex = 11;
+            this.radioButtonIP.Text = "IP";
+            this.radioButtonIP.UseVisualStyleBackColor = true;
+            this.radioButtonIP.CheckedChanged += new System.EventHandler(this.radioButtonIP_CheckedChanged);
             // 
             // radioButtonNone
             // 
@@ -167,6 +188,7 @@ namespace ASCOM.VantagePro
             this.radioButtonNone.TabStop = true;
             this.radioButtonNone.Text = "None";
             this.radioButtonNone.UseVisualStyleBackColor = true;
+            this.radioButtonNone.CheckedChanged += new System.EventHandler(this.radioButtonNone_CheckedChanged);
             // 
             // label3
             // 
@@ -202,11 +224,56 @@ namespace ASCOM.VantagePro
             this.buttonChooser.UseVisualStyleBackColor = true;
             this.buttonChooser.Click += new System.EventHandler(this.buttonChooser_Click);
             // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(145, 163);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(45, 13);
+            this.label4.TabIndex = 15;
+            this.label4.Text = "Address";
+            // 
+            // textBoxIPAddress
+            // 
+            this.textBoxIPAddress.Location = new System.Drawing.Point(209, 160);
+            this.textBoxIPAddress.Name = "textBoxIPAddress";
+            this.textBoxIPAddress.Size = new System.Drawing.Size(90, 20);
+            this.textBoxIPAddress.TabIndex = 16;
+            // 
+            // textBoxIPPort
+            // 
+            this.textBoxIPPort.Location = new System.Drawing.Point(340, 160);
+            this.textBoxIPPort.Name = "textBoxIPPort";
+            this.textBoxIPPort.Size = new System.Drawing.Size(38, 20);
+            this.textBoxIPPort.TabIndex = 18;
+            this.textBoxIPPort.Text = "22222";
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(313, 163);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(26, 13);
+            this.label5.TabIndex = 17;
+            this.label5.Text = "Port";
+            // 
+            // labelTracePath
+            // 
+            this.labelTracePath.Location = new System.Drawing.Point(112, 201);
+            this.labelTracePath.Name = "labelTracePath";
+            this.labelTracePath.Size = new System.Drawing.Size(419, 16);
+            this.labelTracePath.TabIndex = 19;
+            // 
             // SetupDialogForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(607, 219);
+            this.ClientSize = new System.Drawing.Size(607, 224);
+            this.Controls.Add(this.labelTracePath);
+            this.Controls.Add(this.textBoxIPPort);
+            this.Controls.Add(this.label5);
+            this.Controls.Add(this.textBoxIPAddress);
+            this.Controls.Add(this.label4);
             this.Controls.Add(this.buttonChooser);
             this.Controls.Add(this.textBoxReportFile);
             this.Controls.Add(this.label3);
@@ -242,7 +309,7 @@ namespace ASCOM.VantagePro
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.CheckBox chkTrace;
         private System.Windows.Forms.ComboBox comboBoxComPort;
-        private System.Windows.Forms.RadioButton radioButtonDataFile;
+        private System.Windows.Forms.RadioButton radioButtonReportFile;
         private System.Windows.Forms.RadioButton radioButtonSerialPort;
         private System.Windows.Forms.GroupBox groupBoxOpMode;
         private System.Windows.Forms.Label label3;
@@ -250,5 +317,11 @@ namespace ASCOM.VantagePro
         private System.Windows.Forms.RadioButton radioButtonNone;
         private System.Windows.Forms.OpenFileDialog openFileDialogReportFile;
         private System.Windows.Forms.Button buttonChooser;
+        private System.Windows.Forms.RadioButton radioButtonIP;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TextBox textBoxIPAddress;
+        private System.Windows.Forms.TextBox textBoxIPPort;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.Label labelTracePath;
     }
 }

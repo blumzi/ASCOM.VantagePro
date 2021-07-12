@@ -76,7 +76,7 @@ namespace ASCOM.VantagePro
         /// </summary>
         public ObservingConditions()
         {
-            tl = new TraceLogger("", "VantagePro");
+            tl = new TraceLogger("", "VantageProDriver");
             tl.LogMessage("ObservingConditions", "Starting initialisation");
 
             vantagePro = VantagePro.Instance;
@@ -164,12 +164,21 @@ namespace ASCOM.VantagePro
             throw new ASCOM.MethodNotImplementedException("CommandString");
         }
 
+        protected virtual void Dispose(bool dispozing)
+        {
+            if (dispozing)
+            {
+                // Clean up the tracelogger and util objects
+                tl.Enabled = false;
+                tl.Dispose();
+                tl = null;
+            }
+        }
+
         public void Dispose()
         {
-            // Clean up the tracelogger and util objects
-            tl.Enabled = false;
-            tl.Dispose();
-            tl = null;
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         public bool Connected
@@ -658,8 +667,7 @@ namespace ASCOM.VantagePro
         /// <param name="args"></param>
         internal static void LogMessage(string identifier, string message, params object[] args)
         {
-            var msg = string.Format(message, args);
-            tl.LogMessage(identifier, msg);
+            tl.LogMessage(identifier, string.Format(message, args));
         }
         #endregion
     }

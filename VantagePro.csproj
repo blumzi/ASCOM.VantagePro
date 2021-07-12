@@ -103,7 +103,6 @@
       <DependentUpon>SetupDialogForm.cs</DependentUpon>
     </Compile>
     <Compile Include="VantagePro.cs" />
-    <Compile Include="Version.cs" />
     <Compile Include="Weather.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -154,8 +153,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>cd $(ProjectDir)
-C:\cygwin64\bin\bash.exe GetGitVersion.sh</PreBuildEvent>
+    <PreBuildEvent>
+    </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>"C:\Program Files (x86)\Inno Setup 5\ISCC.exe" "/DSolutionDir=$(SolutionDir)"  /O"$(SolutionDir)\Solution Items" "$(ProjectDir)\VantagePro Setup.iss</PostBuildEvent>

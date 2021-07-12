@@ -39,11 +39,11 @@ namespace ASCOM.VantagePro
 
                 if (portsList.Contains((string)comboBoxComPort.SelectedItem))
                 {
-                    vantagePro.PortName = (string)comboBoxComPort.SelectedItem;
+                    vantagePro.SerialPortName = (string)comboBoxComPort.SelectedItem;
                     vantagePro.OperationalMode = VantagePro.OpMode.Serial;
                 }
             }
-            else if (radioButtonDataFile.Checked)
+            else if (radioButtonReportFile.Checked)
             {
                 if (System.IO.File.Exists(textBoxReportFile.Text))
                 {
@@ -51,10 +51,17 @@ namespace ASCOM.VantagePro
                     vantagePro.OperationalMode = VantagePro.OpMode.File;
                 }
             }
+            else if (radioButtonIP.Checked)
+            {
+                vantagePro.IPAddress = textBoxIPAddress.Text;
+                vantagePro.IPPort = Convert.ToInt16(textBoxIPPort.Text);
+                vantagePro.OperationalMode = VantagePro.OpMode.IP;
+            }
             else
                 ok = false;
 
             ObservingConditions.tl.Enabled = chkTrace.Checked;
+            vantagePro.Tracing = chkTrace.Checked;
 
             if (ok)
                 vantagePro.WriteProfile();
@@ -89,21 +96,24 @@ namespace ASCOM.VantagePro
             comboBoxComPort.Items.Clear();
             comboBoxComPort.Items.AddRange(System.IO.Ports.SerialPort.GetPortNames());      // use System.IO because it's static
 
-            if (comboBoxComPort.Items.Contains(vantagePro.PortName))
+            if (comboBoxComPort.Items.Contains(vantagePro.SerialPortName))
             {
-                comboBoxComPort.SelectedItem = vantagePro.PortName;
+                comboBoxComPort.SelectedItem = vantagePro.SerialPortName;
             }
 
-            switch(vantagePro.OperationalMode)
+            switch (vantagePro.OperationalMode)
             {
                 case VantagePro.OpMode.None:
                     radioButtonNone.Checked = true;
                     break;
                 case VantagePro.OpMode.File:
-                    radioButtonDataFile.Checked = true;
+                    radioButtonReportFile.Checked = true;
                     break;
                 case VantagePro.OpMode.Serial:
                     radioButtonSerialPort.Checked = true;
+                    break;
+                case VantagePro.OpMode.IP:
+                    radioButtonIP.Checked = true;
                     break;
             }
 
@@ -118,6 +128,50 @@ namespace ASCOM.VantagePro
         private void openFileDialogReportFile_FileOk(object sender, CancelEventArgs e)
         {
             textBoxReportFile.Text = (sender as OpenFileDialog).FileName;
+        }
+
+        private void radioButtonReportFile_CheckedChanged(object sender, EventArgs e)
+        {
+            if ((sender as RadioButton).Checked)
+            {
+                foreach (var control in new List<Control> { textBoxReportFile, buttonChooser })
+                    control.Enabled = true;
+                foreach (var control in new List<Control> { comboBoxComPort, textBoxIPAddress, textBoxIPPort })
+                    control.Enabled = false;
+            }
+        }
+
+        private void radioButtonSerialPort_CheckedChanged(object sender, EventArgs e)
+        {
+            if ((sender as RadioButton).Checked)
+            {
+                foreach (var control in new List<Control> { comboBoxComPort })
+                    control.Enabled = true;
+                foreach (var control in new List<Control> { textBoxReportFile, buttonChooser, textBoxIPAddress, textBoxIPPort })
+                    control.Enabled = false;
+            }
+        }
+
+        private void radioButtonIP_CheckedChanged(object sender, EventArgs e)
+        {
+            if ((sender as RadioButton).Checked)
+            {
+                foreach (var control in new List<Control> { textBoxIPAddress, textBoxIPPort })
+                    control.Enabled = true;
+                foreach (var control in new List<Control> { comboBoxComPort, textBoxReportFile, buttonChooser })
+                    control.Enabled = false;
+            }
+        }
+
+        private void radioButtonNone_CheckedChanged(object sender, EventArgs e)
+        {
+            foreach (var control in new List<Control> { textBoxIPAddress, textBoxIPPort, comboBoxComPort, textBoxReportFile, buttonChooser })
+                control.Enabled = false;
+        }
+
+        private void chkTrace_CheckedChanged(object sender, EventArgs e)
+        {
+            labelTracePath.Text = (sender as CheckBox).Checked ? VantagePro.traceLogFile : "";
         }
     }
 }

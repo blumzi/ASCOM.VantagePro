@@ -11,30 +11,35 @@ using ASCOM.Utilities;
 
 using Weather;
 using Newtonsoft.Json;
-
-using Git;
+using System.Net;
+using System.Net.Sockets;
 
 
 namespace ASCOM.VantagePro
 {
     public class VantagePro: WeatherStation
     {
-        private string _dataFile;
-        private static string version = Git.Latest.VersionTag;
-        private static string driverDescription = $"ASCOM VantagePro2 {version}";
-        private Util util = new Util();
+        private readonly static Version version = new Version(1, 2);
 
-        public enum OpMode { None, File, Serial };
+        private string _dataFile;
+        private readonly static string driverDescription = $"ASCOM VantagePro2 v1.2";
+
+        public enum OpMode { None, File, Serial, IP };
         public OpMode _opMode = VantagePro.OpMode.None;
 
         public string _portName = null;
         public int _portSpeed = 19200;
-        System.IO.Ports.SerialPort _port = new System.IO.Ports.SerialPort();
+        System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort();
+
+        public Socket IPsocket;
 
         private bool _connected = false;
         private bool _initialized = false;
 
+        public static TraceLogger tl = new TraceLogger(traceLogFile, "VantagePro");
+
         public VantagePro() { }
+
         static VantagePro() { }
 
         private Dictionary<string, string> sensorData = null;
@@ -42,6 +47,7 @@ namespace ASCOM.VantagePro
 
         private static readonly Lazy<VantagePro> lazy = new Lazy<VantagePro>(() => new VantagePro()); // Singleton
 
+        public static readonly string traceLogFile = $"{Path.GetTempPath()}VantagePro v{version}.log";
         public static string DriverDescription
         {
             get
@@ -58,9 +64,12 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public static string VantagePro_OpMode = "OperationMode";
-        public static string VantagePro_DataFile = "DataFile";
-        public static string VantagePro_SerialPort = "Port";
+        public static string Profile_OpMode = "OperationMode";
+        public static string Profile_DataFile = "DataFile";
+        public static string Profile_SerialPort = "SerialPort";
+        public static string Profile_IPAddress = "IPAddress";
+        public static string Profile_IPPort = "IPPort";
+        public static string Profile_Tracing = "Tracing";
 
         public static VantagePro Instance
         {
@@ -69,7 +78,7 @@ namespace ASCOM.VantagePro
                 if (lazy.IsValueCreated)
                     return lazy.Value;
 
-                lazy.Value.init();
+                lazy.Value.Init();
                 return lazy.Value;
             }
         }
@@ -80,24 +89,23 @@ namespace ASCOM.VantagePro
         /// </summary>
         public void Refresh()
         {
-            if (OperationalMode == OpMode.File)
+            switch (OperationalMode) {
+            case OpMode.File:
                 RefreshFromDatafile();
-            else if (OperationalMode == OpMode.Serial)
+                break;
+
+            case OpMode.Serial:
                 RefreshFromSerialPort();
-        }
+                break;
 
-        public OpMode OperationalMode
-        {
-            get
-            {
-                return _opMode;
-            }
-
-            set
-            {
-                _opMode = value;
+            case OpMode.IP:
+                RefreshFromSocket();
+                break;
             }
         }
+
+        public OpMode OperationalMode { get; set; }
+        public bool Tracing { get; set; }
 
         public void RefreshFromDatafile()
         {
@@ -144,20 +152,20 @@ namespace ASCOM.VantagePro
             }
         }
 
-        private void TryOpenPort()
+        private void TryOpenSerialPort()
         {
-            if (_port == null)
-                _port = new System.IO.Ports.SerialPort();
-            else if (_port.IsOpen)
+            if (serialPort == null)
+                serialPort = new System.IO.Ports.SerialPort();
+            else if (serialPort.IsOpen)
                 return;
 
-            _port.PortName = _portName;
-            _port.BaudRate = _portSpeed;
-            _port.ReadTimeout = 1000;
-            _port.ReadBufferSize = 100;
+            serialPort.PortName = _portName;
+            serialPort.BaudRate = _portSpeed;
+            serialPort.ReadTimeout = 1000;
+            serialPort.ReadBufferSize = 100;
             try
             {
-                _port.Open();
+                serialPort.Open();
             }
             catch
             {
@@ -165,40 +173,106 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public string PortName
+        private bool TryOpenSocket()
         {
-            get
+            IPsocket = null;
+
+            try
             {
-                return _portName;
+                System.Net.IPAddress.TryParse(IPAddress, out IPAddress addr);
+                IPEndPoint ipe = new IPEndPoint(addr, IPPort);
+                Socket tempSocket =
+                    new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                tempSocket.Connect(ipe);
+
+                if (tempSocket.Connected)
+                {
+                    IPsocket = tempSocket;
+                    tl.LogMessage("TryOpenSocket", $"Connected to {IPAddress}:{IPPort}");
+                    return true;
+                }
+            }
+            catch (Exception ex) {
+                tl.LogMessage("TryOpenSocket", $"Caught: {ex.Message} at {ex.StackTrace}");
+                throw;
             }
 
-            set
-            {
-                _portName = value;
-            }
+            return false;
         }
 
-        private bool TryWakeUpVantagePro()
+        /// <summary>
+        /// Disconnects and closes the IPsocket
+        /// </summary>
+        /// <returns>is IPsocket still connected</returns>
+        private bool TryCloseSocket()
         {
-            TryOpenPort();
+            try
+            {
+                IPsocket.Disconnect(true);
+                tl.LogMessage("TryOpenSocket", $"Disconnected from {IPAddress}:{IPPort}");
+                IPsocket.Close();
+                return false;
+            }
+            catch { }
+            return true;
+        }
+
+        public string SerialPortName { get; set;}
+        public string IPAddress { get; set; }
+        public short IPPort { get; set; }
+
+        private bool TryWakeUpSerialVantagePro()
+        {
+            TryOpenSerialPort();
 
             bool awake = false;
             for (var attempts = 3; attempts != 0; attempts--)
             {
-                _port.Write("\r");
-                if (_port.ReadExisting() == "\n\r")
+                serialPort.Write("\r");
+                if (serialPort.ReadExisting() == "\n\r")
                 {
                     awake = true;
+                    #region trace
+                    tl.LogMessage("TryWakeUpSerialVantagePro", $"Successfully woke up {SerialPortName}");
+                    #endregion
                     break;
                 }
             }
 
             if (!awake)
             {
-                #region debug
+                #region trace
+                tl.LogMessage("TryWakeUpSerialVantagePro", $"Failed to wake up {SerialPortName}");
                 #endregion
             }
             return awake;
+        }
+
+        private bool TryWakeUpIPVantagePro()
+        {
+            TryOpenSocket();
+
+            Byte[] bytesSent = Encoding.ASCII.GetBytes("\r");
+            Byte[] bytesReceived = new byte[2];
+            int nBytes;
+
+            for (var attempts = 3; attempts != 0; attempts--)
+            {
+                IPsocket.Send(bytesSent, 1, 0);
+                nBytes = IPsocket.Receive(bytesReceived, bytesReceived.Length, 0);
+                if (nBytes == 2 && Encoding.ASCII.GetString(bytesReceived, 0, nBytes) == "\n\r")
+                {
+                    #region trace
+                    tl.LogMessage("TryWakeUpIPVantagePro", $"Succesfully woke up {IPAddress}:{IPPort}");
+                    #endregion
+                    return true;
+                }
+            }
+
+            #region trace
+            tl.LogMessage("TryWakeUpIPVantagePro", $"Failed to wake up {IPAddress}:{IPPort}");
+            #endregion
+            return false;
         }
 
         /// <summary>
@@ -208,44 +282,88 @@ namespace ASCOM.VantagePro
         /// <param name="bytes">The stream of bytes in the reply block</param>
         /// <param name="o">The starting offset</param>
         /// <returns></returns>
-        public ushort getTwoBytes(byte[] bytes, int o)
+        public ushort GetTwoBytes(byte[] bytes, int o)
         {
             return (ushort) ((bytes[o + 1] << 8) | bytes[o]);
         }
 
         public void RefreshFromSerialPort()
         {
-            if (!TryWakeUpVantagePro())
+            if (!TryWakeUpSerialVantagePro())
                 return;
 
             byte[] buf = new byte[99];
-            _port.Write("LPS 2 1\n");
+            serialPort.Write("LPS 2 1\n");
 
-            if (_port.ReadByte() != 0x6)
+            if (serialPort.ReadByte() != 0x6)
                 return;
 
-            if (_port.Read(buf, 0, 99) != 99)
+            if (serialPort.Read(buf, 0, 99) != 99)
+            {
+                #region trace
+                tl.LogMessage("RefreshFromSerialPort", $"Failed to read 99 bytes from {SerialPortName}");
+                #endregion
+                return;
+            }
+
+            #region trace
+            tl.LogMessage("RefreshFromSerialPort", $"Successfully read 99 bytes from {SerialPortName}");
+            #endregion
+            GetSensorData(buf);
+        }
+
+        private void RefreshFromSocket()
+        {
+            if (!TryWakeUpIPVantagePro())
                 return;
 
+            string LPS = "LPS 2 1\n";
+            Byte[] sentBytes = Encoding.ASCII.GetBytes(LPS);
+            Byte[] bytesReceived = new byte[99];
+
+            IPsocket.Send(sentBytes, sentBytes.Length, 0);
+            IPsocket.Receive(bytesReceived, 1, 0);
+            if (bytesReceived[0] != 0x6)
+                return;
+
+            if (IPsocket.Receive(bytesReceived, bytesReceived.Length, 0) != 99)
+            {
+                #region trace
+                tl.LogMessage("RefreshFromSocket", $"Failed to receive 99 bytes from {IPAddress}:{IPPort}");
+                #endregion
+                return;
+            }
+
+            #region trace
+            tl.LogMessage("RefreshFromSocket", $"Received 99 bytes from {IPAddress}:{IPPort}");
+            #endregion
+            GetSensorData(bytesReceived);
+        }
+
+        private void GetSensorData(byte[] buf) {
             // Check the reply is valid - TBD verify the checksum
             if (buf[0] != 'L' || buf[1] != 'O' || buf[2] != 'O' || buf[4] != 1 || buf[95] != '\n' || buf[96] != '\r')
                 return;
 
             ASCOM.Utilities.Util util = new Util();
 
-            double F = getTwoBytes(buf, 12) / 10.0;
+            double F = GetTwoBytes(buf, 12) / 10.0;
             sensorData["outsideTemp"] = util.ConvertUnits(F, Units.degreesFarenheit, Units.degreesCelsius).ToString();
             sensorData["windSpeed"] = util.ConvertUnits(buf[14], Units.milesPerHour, Units.metresPerSecond).ToString();
-            sensorData["windDir"] = getTwoBytes(buf, 16).ToString();
+            sensorData["windDir"] = GetTwoBytes(buf, 16).ToString();
             sensorData["outsideHumidity"] = buf[33].ToString();
-            sensorData["barometer"] = getTwoBytes(buf, 7).ToString();
-            F = getTwoBytes(buf, 30);
+            sensorData["barometer"] = GetTwoBytes(buf, 7).ToString();
+            F = GetTwoBytes(buf, 30);
             sensorData["outsideDewPt"] = util.ConvertUnits(F, Units.degreesFarenheit, Units.degreesCelsius).ToString();
-            sensorData["rainRate"] = getTwoBytes(buf, 41).ToString();
+            sensorData["rainRate"] = GetTwoBytes(buf, 41).ToString();
             sensorData["ForecastStr"] = "No forecast";
+
+            #region trace
+            tl.LogMessage("GetSensorData", $"Successfully parsed sensor data");
+            #endregion
         }
 
-        public void init()
+        public void Init()
         {
             if (_initialized)
                 return;
@@ -253,6 +371,7 @@ namespace ASCOM.VantagePro
             _name = "VantagePro";
             sensorData = new Dictionary<string, string>();
             ReadProfile();
+            tl.Enabled = Tracing;
             Refresh();
 
             _initialized = true;
@@ -273,18 +392,22 @@ namespace ASCOM.VantagePro
                 if (OperationalMode == OpMode.None)
                     _connected = false;
 
-                if (OperationalMode == OpMode.Serial)
-                {
-                    if (value == true)
-                        TryOpenPort();
-                    else
-                        _port.Close();
-                    _connected = _port.IsOpen;
-                }
-                else if (OperationalMode == OpMode.File)
-                {
-                    if (value == true)
-                        _connected = DataFile != null && DataFile != "" && File.Exists(DataFile);
+                switch (OperationalMode) {
+                    case OpMode.Serial:
+                        if (value)
+                            TryOpenSerialPort();
+                        else
+                            serialPort.Close();
+                        _connected = serialPort.IsOpen;
+                        break;
+
+                    case OpMode.File:
+                        _connected = value && DataFile != null && DataFile != "" && File.Exists(DataFile);
+                        break;
+
+                    case OpMode.IP:
+                        _connected = value ? TryOpenSocket() : TryCloseSocket();
+                        break;
                 }
             }
         }
@@ -293,11 +416,12 @@ namespace ASCOM.VantagePro
         {
             get
             {
+                Init();
                 return driverDescription;
             }
         }
 
-        private static ArrayList supportedActions = new ArrayList() {
+        private readonly static ArrayList supportedActions = new ArrayList() {
             "raw-data",
             "OCHTag",
             "forecast",
@@ -313,25 +437,20 @@ namespace ASCOM.VantagePro
 
         public string Action(string action, string parameter)
         {
-            string ret = "";
-
             switch (action)
             {
                 case "OCHTag":
-                    ret = "VantagePro";
-                    break;
+                    return "VantagePro";
 
                 case "raw-data":
-                    ret = RawData;
-                    break;
+                    return RawData;
 
                 case "forecast":
                     return Forecast;
 
                 default:
-                    throw new ASCOM.ActionNotImplementedException($"Action {action} is not implemented by this driver");
+                    throw new ASCOM.ActionNotImplementedException($"Action \"{action}\" is not implemented by this driver");
             }
-            return ret;
         }
 
         public string RawData
@@ -362,7 +481,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return $"{Name} Report File or Serial Port driver {DriverVersion} ({Git.Latest.OriginUrl})";
+                return $"{Name} driver {DriverVersion}";
             }
         }
 
@@ -370,7 +489,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return version;
+                return $"v{version}";
             }
         }
 
@@ -379,16 +498,15 @@ namespace ASCOM.VantagePro
         /// </summary>
         internal void ReadProfile()
         {
-            // string defaultReportFile = "C:/Weather/Davis VantagePro/Weather_Vantage_Pro.htm";
-
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
-                OpMode mode;
-
-                Enum.TryParse<OpMode>(driverProfile.GetValue(DriverId, VantagePro_OpMode, string.Empty, OpMode.File.ToString()), out mode);
+                Enum.TryParse<OpMode>(driverProfile.GetValue(DriverId, Profile_OpMode, string.Empty, OpMode.File.ToString()), out OpMode mode);
                 OperationalMode = mode;
-                DataFile = driverProfile.GetValue(DriverId, VantagePro_DataFile, string.Empty, "");
-                PortName = driverProfile.GetValue(DriverId, VantagePro_SerialPort, string.Empty, "");
+                DataFile = driverProfile.GetValue(DriverId, Profile_DataFile, string.Empty, "");
+                SerialPortName = driverProfile.GetValue(DriverId, Profile_SerialPort, string.Empty, "");
+                IPAddress = driverProfile.GetValue(DriverId, Profile_IPAddress, string.Empty, "");
+                IPPort = Convert.ToInt16(driverProfile.GetValue(DriverId, Profile_IPPort, string.Empty, "22222"));
+                Tracing = Convert.ToBoolean(driverProfile.GetValue(DriverId, Profile_Tracing, string.Empty, "True"));
             }
         }
 
@@ -399,9 +517,12 @@ namespace ASCOM.VantagePro
         {
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
-                driverProfile.WriteValue(DriverId, VantagePro_OpMode, OperationalMode.ToString());
-                driverProfile.WriteValue(DriverId, VantagePro_DataFile, DataFile);
-                driverProfile.WriteValue(DriverId, VantagePro_SerialPort, PortName);
+                driverProfile.WriteValue(DriverId, Profile_OpMode, OperationalMode.ToString());
+                driverProfile.WriteValue(DriverId, Profile_DataFile, DataFile);
+                driverProfile.WriteValue(DriverId, Profile_SerialPort, SerialPortName);
+                driverProfile.WriteValue(DriverId, Profile_IPAddress, IPAddress);
+                driverProfile.WriteValue(DriverId, Profile_IPPort, Convert.ToString(IPPort));
+                driverProfile.WriteValue(DriverId, Profile_Tracing, Convert.ToString(Tracing));
             }
         }
 
