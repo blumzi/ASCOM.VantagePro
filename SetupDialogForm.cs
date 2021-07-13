@@ -14,7 +14,7 @@ namespace ASCOM.VantagePro
 
     public partial class SetupDialogForm : Form
     {
-        private VantagePro vantagePro = VantagePro.Instance;
+        private readonly VantagePro vantagePro = VantagePro.Instance;
 
         public SetupDialogForm()
         {
