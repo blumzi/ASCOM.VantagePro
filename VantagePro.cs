@@ -21,14 +21,12 @@ namespace ASCOM.VantagePro
     {
         private readonly static Version version = new Version(1, 2);
 
-        private string _dataFile;
         private readonly static string driverDescription = $"ASCOM VantagePro2 v1.2";
 
         public enum OpMode { None, File, Serial, IP };
-        public OpMode _opMode = VantagePro.OpMode.None;
 
-        public string _portName = null;
-        public int _portSpeed = 19200;
+        public string serialPortName = null;
+        public int serialPortSpeed = 19200;
         System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort();
 
         public Socket IPsocket;
@@ -91,15 +89,15 @@ namespace ASCOM.VantagePro
         {
             switch (OperationalMode) {
             case OpMode.File:
-                RefreshFromDatafile();
+                RefreshFrom_DataFile();
                 break;
 
             case OpMode.Serial:
-                RefreshFromSerialPort();
+                RefreshFrom_SerialPort();
                 break;
 
             case OpMode.IP:
-                RefreshFromSocket();
+                RefreshFrom_Socket();
                 break;
             }
         }
@@ -107,9 +105,9 @@ namespace ASCOM.VantagePro
         public OpMode OperationalMode { get; set; }
         public bool Tracing { get; set; }
 
-        public void RefreshFromDatafile()
+        public void RefreshFrom_DataFile()
         {
-            if (_dataFile == null || _dataFile == string.Empty)
+            if (string.IsNullOrEmpty(DataFile))
             {
                 if (_connected)
                     throw new InvalidValueException("Null or empty dataFile name");
@@ -152,15 +150,15 @@ namespace ASCOM.VantagePro
             }
         }
 
-        private void TryOpenSerialPort()
+        private void TryOpenStation_Serial()
         {
             if (serialPort == null)
                 serialPort = new System.IO.Ports.SerialPort();
             else if (serialPort.IsOpen)
                 return;
 
-            serialPort.PortName = _portName;
-            serialPort.BaudRate = _portSpeed;
+            serialPort.PortName = serialPortName;
+            serialPort.BaudRate = serialPortSpeed;
             serialPort.ReadTimeout = 1000;
             serialPort.ReadBufferSize = 100;
             try
@@ -173,7 +171,7 @@ namespace ASCOM.VantagePro
             }
         }
 
-        private bool TryOpenSocket()
+        private bool TryOpenStation_Socket()
         {
             IPsocket = null;
 
@@ -204,26 +202,26 @@ namespace ASCOM.VantagePro
         /// Disconnects and closes the IPsocket
         /// </summary>
         /// <returns>is IPsocket still connected</returns>
-        private bool TryCloseSocket()
+        private bool TryCloseStation_Socket()
         {
             try
             {
                 IPsocket.Disconnect(true);
-                tl.LogMessage("TryOpenSocket", $"Disconnected from {IPAddress}:{IPPort}");
+                tl.LogMessage("TryCloseSocket", $"Disconnected from {IPAddress}:{IPPort}");
                 IPsocket.Close();
-                return false;
+                return true;
             }
             catch { }
-            return true;
+            return false;
         }
 
         public string SerialPortName { get; set;}
         public string IPAddress { get; set; }
         public short IPPort { get; set; }
 
-        private bool TryWakeUpSerialVantagePro()
+        private bool TryWakeUpStation_Serial()
         {
-            TryOpenSerialPort();
+            TryOpenStation_Serial();
 
             bool awake = false;
             for (var attempts = 3; attempts != 0; attempts--)
@@ -248,9 +246,9 @@ namespace ASCOM.VantagePro
             return awake;
         }
 
-        private bool TryWakeUpIPVantagePro()
+        private bool TryWakeUpStation_Socket()
         {
-            TryOpenSocket();
+            TryOpenStation_Socket();
 
             Byte[] bytesSent = Encoding.ASCII.GetBytes("\r");
             Byte[] bytesReceived = new byte[2];
@@ -287,9 +285,9 @@ namespace ASCOM.VantagePro
             return (ushort) ((bytes[o + 1] << 8) | bytes[o]);
         }
 
-        public void RefreshFromSerialPort()
+        public void RefreshFrom_SerialPort()
         {
-            if (!TryWakeUpSerialVantagePro())
+            if (!TryWakeUpStation_Serial())
                 return;
 
             byte[] buf = new byte[99];
@@ -310,23 +308,24 @@ namespace ASCOM.VantagePro
             tl.LogMessage("RefreshFromSerialPort", $"Successfully read 99 bytes from {SerialPortName}");
             #endregion
             GetSensorData(buf);
+            _lastDataRead = DateTime.Now;
         }
 
-        private void RefreshFromSocket()
+        private void RefreshFrom_Socket()
         {
-            if (!TryWakeUpIPVantagePro())
+            if (!TryWakeUpStation_Socket())
                 return;
 
             string LPS = "LPS 2 1\n";
-            Byte[] sentBytes = Encoding.ASCII.GetBytes(LPS);
-            Byte[] bytesReceived = new byte[99];
+            Byte[] txBytes = Encoding.ASCII.GetBytes(LPS);
+            Byte[] rxBytes = new byte[99];
 
-            IPsocket.Send(sentBytes, sentBytes.Length, 0);
-            IPsocket.Receive(bytesReceived, 1, 0);
-            if (bytesReceived[0] != 0x6)
+            IPsocket.Send(txBytes, txBytes.Length, 0);
+            IPsocket.Receive(rxBytes, 1, 0);
+            if (rxBytes[0] != 0x6)
                 return;
 
-            if (IPsocket.Receive(bytesReceived, bytesReceived.Length, 0) != 99)
+            if (IPsocket.Receive(rxBytes, rxBytes.Length, 0) != 99)
             {
                 #region trace
                 tl.LogMessage("RefreshFromSocket", $"Failed to receive 99 bytes from {IPAddress}:{IPPort}");
@@ -337,11 +336,15 @@ namespace ASCOM.VantagePro
             #region trace
             tl.LogMessage("RefreshFromSocket", $"Received 99 bytes from {IPAddress}:{IPPort}");
             #endregion
-            GetSensorData(bytesReceived);
+            GetSensorData(rxBytes);
+            _lastDataRead = DateTime.Now;
         }
 
         private void GetSensorData(byte[] buf) {
+            //
             // Check the reply is valid - TBD verify the checksum
+            // buf[4] == 1 for LOOP2 packets
+            //
             if (buf[0] != 'L' || buf[1] != 'O' || buf[2] != 'O' || buf[4] != 1 || buf[95] != '\n' || buf[96] != '\r')
                 return;
 
@@ -351,15 +354,17 @@ namespace ASCOM.VantagePro
             sensorData["outsideTemp"] = util.ConvertUnits(F, Units.degreesFarenheit, Units.degreesCelsius).ToString();
             sensorData["windSpeed"] = util.ConvertUnits(buf[14], Units.milesPerHour, Units.metresPerSecond).ToString();
             sensorData["windDir"] = GetTwoBytes(buf, 16).ToString();
+            sensorData["windGust"] = util.ConvertUnits(GetTwoBytes(buf, 22) * 10, Units.milesPerHour, Units.metresPerSecond).ToString();
             sensorData["outsideHumidity"] = buf[33].ToString();
-            sensorData["barometer"] = GetTwoBytes(buf, 7).ToString();
+            double P = GetTwoBytes(buf, 7);
+            sensorData["barometer"] = util.ConvertUnits(P, Units.mmHg, Units.hPa).ToString();
             F = GetTwoBytes(buf, 30);
             sensorData["outsideDewPt"] = util.ConvertUnits(F, Units.degreesFarenheit, Units.degreesCelsius).ToString();
             sensorData["rainRate"] = GetTwoBytes(buf, 41).ToString();
             sensorData["ForecastStr"] = "No forecast";
 
             #region trace
-            tl.LogMessage("GetSensorData", $"Successfully parsed sensor data");
+            tl.LogMessage("GetSensorData", $"Successfully parsed sensor data (packet CRC: {GetTwoBytes(buf, 97):X2})");
             #endregion
         }
 
@@ -395,7 +400,7 @@ namespace ASCOM.VantagePro
                 switch (OperationalMode) {
                     case OpMode.Serial:
                         if (value)
-                            TryOpenSerialPort();
+                            TryOpenStation_Serial();
                         else
                             serialPort.Close();
                         _connected = serialPort.IsOpen;
@@ -406,7 +411,7 @@ namespace ASCOM.VantagePro
                         break;
 
                     case OpMode.IP:
-                        _connected = value ? TryOpenSocket() : TryCloseSocket();
+                        _connected = value ? TryOpenStation_Socket() : TryCloseStation_Socket();
                         break;
                 }
             }
@@ -526,18 +531,7 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public string DataFile
-        {
-            get
-            {
-                return _dataFile;
-            }
-
-            set
-            {
-                _dataFile = value;
-            }
-        }
+        public string DataFile { get; set; }
 
         #region IObservingConditions Implementation
 
@@ -673,13 +667,13 @@ namespace ASCOM.VantagePro
                 case "WindDirection":
                 case "WindSpeed":
                 case "RainRate":
+                case "WindGust":
                     return "SensorDescription - " + PropertyName;
 
                 case "SkyBrightness":
                 case "SkyQuality":
                 case "StarFWHM":
                 case "SkyTemperature":
-                case "WindGust":
                 case "CloudCover":
                     throw new MethodNotImplementedException("SensorDescription(" + PropertyName + ")");
                 default:
@@ -763,18 +757,21 @@ namespace ASCOM.VantagePro
                 case "SkyQuality":
                 case "StarFWHM":
                 case "SkyTemperature":
-                case "WindGust":
                 case "CloudCover":
                     throw new MethodNotImplementedException("SensorDescription(" + PropertyName + ")");
             }
             Refresh();
 
-            double seconds = 0.0;
+            double seconds;
             if (OperationalMode == OpMode.File)
             {
                 string dateTime = sensorData["utcDate"] + " " + sensorData["utcTime"] + "m";
                 DateTime lastUpdate = Convert.ToDateTime(dateTime);
                 seconds = (DateTime.UtcNow - lastUpdate).TotalSeconds;
+            }
+            else
+            {
+                seconds = (DateTime.UtcNow - _lastDataRead).TotalSeconds;
             }
 
             return seconds;
@@ -803,7 +800,8 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                throw new PropertyNotImplementedException("WindGust", false);
+                Refresh();
+                return Convert.ToDouble(sensorData["windGust"]);
             }
         }
 
