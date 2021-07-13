@@ -22,7 +22,7 @@ Compression=lzma
 SolidCompression=yes
 ; Put there by Platform if Driver Installer Support selected
 WizardImageFile="C:\Program Files (x86)\ASCOM\Platform 6 Developer Components\Installer Generator\Resources\WizardImage.bmp"
-LicenseFile="C:\Program Files (x86)\ASCOM\Platform 6 Developer Components\Installer Generator\Resources\CreativeCommons.txt"
+LicenseFile="C:\Users\Blumzi\Source\Repos\VantagePro\Resources\LICENSE.GPL3"
 ; {cf}\ASCOM\Uninstall\ObservingConditions folder created by Platform, always
 UninstallFilesDir="{cf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
 
@@ -36,7 +36,7 @@ Name: "{cf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
 [Files]
 Source: "C:\Users\Blumzi\Source\Repos\VantagePro\bin\Release\ASCOM.VantagePro.ObservingConditions.dll"; DestDir: "{app}"
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
-Source: "C:\Users\Blumzi\Source\Repos\VantagePro\VantageProReadMe.md"; DestDir: "{app}"; Flags: isreadme
+Source: "C:\Users\Blumzi\Source\Repos\VantagePro\ReadMe.md"; DestDir: "{app}"; Flags: isreadme
 ; TODO: Add other files needed by your driver here (add subfolders above)
 
 
