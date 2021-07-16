@@ -37,7 +37,6 @@ The driver exposes the following _ObservingConditions_ properties:
 * RainRate
 * WindSpeed 
 * WindDirection
-* WindGust
 * TimeSinceLastUpdate
 
 ## Supported actions
@@ -45,4 +44,3 @@ The driver supports the following actions:
 
 * _**`raw-data`** (no parameters)_: produces a *JSON* string containing all the raw data gathered from the weather station (lots of it :-).
 * _**`OCHTag`** (no-parameters)_: produces a tag which can be used by the _**OCH**_ (*Observing Conditions Hub*) to redirect actions to this specific driver.
-* _**`forecast`** (no parameters)_: gets the *forecast* string produced by the weather station.

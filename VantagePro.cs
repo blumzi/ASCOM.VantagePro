@@ -354,14 +354,16 @@ namespace ASCOM.VantagePro
             sensorData["outsideTemp"] = util.ConvertUnits(F, Units.degreesFarenheit, Units.degreesCelsius).ToString();
             sensorData["windSpeed"] = util.ConvertUnits(buf[14], Units.milesPerHour, Units.metresPerSecond).ToString();
             sensorData["windDir"] = GetTwoBytes(buf, 16).ToString();
-            sensorData["windGust"] = util.ConvertUnits(GetTwoBytes(buf, 22) * 10, Units.milesPerHour, Units.metresPerSecond).ToString();
             sensorData["outsideHumidity"] = buf[33].ToString();
             double P = GetTwoBytes(buf, 7);
             sensorData["barometer"] = util.ConvertUnits(P, Units.mmHg, Units.hPa).ToString();
+            #region trace
+            tl.LogMessage("GetSensorData",
+                $"barometer: buf[7]: 0x{buf[7]:X2}, buf[8]: 0x{buf[8]:X2}, raw: {P}, sensordata[\"barometer\"]: {sensorData["barometer"]}");
+            #endregion
             F = GetTwoBytes(buf, 30);
             sensorData["outsideDewPt"] = util.ConvertUnits(F, Units.degreesFarenheit, Units.degreesCelsius).ToString();
             sensorData["rainRate"] = GetTwoBytes(buf, 41).ToString();
-            sensorData["ForecastStr"] = "No forecast";
 
             #region trace
             tl.LogMessage("GetSensorData", $"Successfully parsed sensor data (packet CRC: {GetTwoBytes(buf, 97):X2})");
@@ -449,9 +451,6 @@ namespace ASCOM.VantagePro
 
                 case "raw-data":
                     return RawData;
-
-                case "forecast":
-                    return Forecast;
 
                 default:
                     throw new ASCOM.ActionNotImplementedException($"Action \"{action}\" is not implemented by this driver");
@@ -667,7 +666,6 @@ namespace ASCOM.VantagePro
                 case "WindDirection":
                 case "WindSpeed":
                 case "RainRate":
-                case "WindGust":
                     return "SensorDescription - " + PropertyName;
 
                 case "SkyBrightness":
@@ -675,6 +673,7 @@ namespace ASCOM.VantagePro
                 case "StarFWHM":
                 case "SkyTemperature":
                 case "CloudCover":
+                case "WindGust":
                     throw new MethodNotImplementedException("SensorDescription(" + PropertyName + ")");
                 default:
                     throw new ASCOM.InvalidValueException("SensorDescription(" + PropertyName + ")");
@@ -800,8 +799,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                Refresh();
-                return Convert.ToDouble(sensorData["windGust"]);
+                throw new PropertyNotImplementedException("WindGust", false);
             }
         }
 
@@ -827,17 +825,6 @@ namespace ASCOM.VantagePro
                 double windSpeed = MPS(kmh);
 
                 return windSpeed;
-            }
-        }
-
-        public string Forecast
-        {
-            get
-            {
-                Refresh();
-                var forecast = sensorData["ForecastStr"];
-
-                return forecast;
             }
         }
 
