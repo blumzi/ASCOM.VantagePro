@@ -34,6 +34,7 @@ namespace ASCOM.VantagePro
         private bool _connected = false;
         private bool _initialized = false;
 
+        public static readonly string traceLogFile = $"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\VantagePro v{version}.log";
         public static TraceLogger tl = new TraceLogger(traceLogFile, "VantagePro");
 
         public VantagePro() { }
@@ -45,7 +46,6 @@ namespace ASCOM.VantagePro
 
         private static readonly Lazy<VantagePro> lazy = new Lazy<VantagePro>(() => new VantagePro()); // Singleton
 
-        public static readonly string traceLogFile = $"{Path.GetTempPath()}VantagePro v{version}.log";
         public static string DriverDescription
         {
             get

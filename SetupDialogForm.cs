@@ -120,6 +120,8 @@ namespace ASCOM.VantagePro
             }
 
             textBoxReportFile.Text = vantagePro.DataFile;
+            chkTrace.Checked = vantagePro.Tracing;
+            labelTracePath.Text = chkTrace.Checked ? VantagePro.traceLogFile : "";
         }
 
         private void buttonChooser_Click(object sender, EventArgs e)
