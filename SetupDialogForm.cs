@@ -23,6 +23,8 @@ namespace ASCOM.VantagePro
             InitializeComponent();
             // Initialise current values of user settings from the ASCOM Profile
             InitUI();
+
+            this.Text = $"VantagePro Setup v{typeof(SetupDialogForm).Assembly.GetName().Version}";
         }
 
         private void cmdOK_Click(object sender, EventArgs e) // OK button event handler
