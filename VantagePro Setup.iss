@@ -12,31 +12,31 @@ AppPublisherURL=mailto:theblumz@gmail.com
 AppSupportURL=http://tech.groups.yahoo.com/group/ASCOM-Talk/
 AppUpdatesURL=http://ascom-standards.org/
 VersionInfoVersion=1.2
-MinVersion=0,5.0.2195sp4
-DefaultDirName="{cf}\ASCOM\ObservingConditions"
+;MinVersion=0,5.0.2195sp4
+DefaultDirName="{commoncf}\ASCOM\ObservingConditions"
 DisableDirPage=yes
 DisableProgramGroupPage=yes
-OutputDir="."
+OutputDir="Solution Items"
 OutputBaseFilename="VantagePro Setup 1.2"
 Compression=lzma
 SolidCompression=yes
 ; Put there by Platform if Driver Installer Support selected
 WizardImageFile="C:\Program Files (x86)\ASCOM\Platform 6 Developer Components\Installer Generator\Resources\WizardImage.bmp"
-LicenseFile="C:\Users\Blumzi\Source\Repos\VantagePro\Resources\LICENSE.GPL3"
+LicenseFile="Resources\LICENSE.GPL3"
 ; {cf}\ASCOM\Uninstall\ObservingConditions folder created by Platform, always
-UninstallFilesDir="{cf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
+UninstallFilesDir="{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Dirs]
-Name: "{cf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
+Name: "{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
 ; TODO: Add subfolders below {app} as needed (e.g. Name: "{app}\MyFolder")
 
 [Files]
-Source: "C:\Users\Blumzi\Source\Repos\VantagePro\bin\Release\ASCOM.VantagePro.ObservingConditions.dll"; DestDir: "{app}"
+Source: "bin\Debug\ASCOM.VantagePro.ObservingConditions.dll"; DestDir: "{app}"
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
-Source: "C:\Users\Blumzi\Source\Repos\VantagePro\ReadMe.md"; DestDir: "{app}"; Flags: isreadme
+Source: "ReadMe.md"; DestDir: "{app}"; Flags: isreadme
 ; TODO: Add other files needed by your driver here (add subfolders above)
 
 

@@ -10,9 +10,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("ASCOM.VantagePro.ObservingConditions")]
 [assembly: AssemblyDescription("ASCOM ObservingConditions driver for VantagePro2")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("The ASCOM Initiative")]
+[assembly: AssemblyCompany("Arie Blumenzweig")]
 [assembly: AssemblyProduct("ASCOM ObservingConditions driver for VantagePro2")]
-[assembly: AssemblyCopyright("Copyright © 2019 The ASCOM Initiative")]
+[assembly: AssemblyCopyright("Copyright © 2019 Arie Blumenzweig")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -36,4 +36,4 @@ using System.Runtime.InteropServices;
 //
 // TODO - Set your driver's version here
 [assembly: AssemblyVersion("1.2.*")]
-[assembly: AssemblyFileVersion("6.4.0.0")]
+[assembly: AssemblyFileVersion("1.2.0.0")]

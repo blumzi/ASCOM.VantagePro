@@ -379,7 +379,7 @@ namespace ASCOM.VantagePro
         /// </remarks>
         public string SensorDescription(string PropertyName)
         {
-            return vantagePro.SensorDescription(PropertyName);
+            return VantagePro.SensorDescription(PropertyName);
         }
 
         /// <summary>
