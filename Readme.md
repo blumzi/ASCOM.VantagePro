@@ -13,12 +13,9 @@ The driver capitalizes on _WeatherLink_'s capability to produce a periodic repor
 data is presented in an **ASCOM** _ObservingConditions_ compliant manner.  This allows the user to continue 
 enjoying _WeatherLink_'s capabilities while gaining **ASCOM** compatibility.
 
-In this mode the *WeatherLink* software is set-up to periodically prepare an *HTML* report-file (minimal interval is 1 minute), based on
-a user-supplied template.
+In this mode the *WeatherLink* software is set-up to periodically prepare an *HTML* report-file (minimal interval is 1 minute), using a template supplied by this driver's installation.  The template exposes the internal data elements maintained by the weather station.
 
-The template supplied with the driver exposes all the internal data elements maintained by the weather station.
-
-The driver periodically parses the report-file (a valid path must be provided at *Setup* time) and presents it in **ASCOM** *ObservingConditions* protocol.
+The driver periodically parses the report-file (a valid path must be provided at *Setup* time) and presents it as an **ASCOM** *ObservingConditions* object.
 
 - ### Serial-port
 In this mode the driver will directly connect to the station and get the relevant data (the serial-port, e.g. _**COM1**_, is supplied at _Setup_ time).
