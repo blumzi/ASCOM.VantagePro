@@ -19,10 +19,6 @@ namespace ASCOM.VantagePro
 {
     public class VantagePro: WeatherStation
     {
-        private readonly static Version version = new Version(1, 2);
-
-        private readonly static string driverDescription = $"ASCOM VantagePro2 v1.2";
-
         public enum OpMode { None, File, Serial, IP };
 
         public const int serialPortSpeed = 19200;
@@ -33,7 +29,7 @@ namespace ASCOM.VantagePro
         private bool _connected = false;
         private bool _initialized = false;
 
-        public static readonly string traceLogFile = $"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\VantagePro v{version}.log";
+        public static readonly string traceLogFile = $"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\VantagePro-{DriverVersion}.log";
         public static TraceLogger tl = new TraceLogger(traceLogFile, "VantagePro");
 
         private static readonly Util util = new Util();
@@ -52,7 +48,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return driverDescription;
+                return $"VantagePro ASCOM Driver {DriverVersion}";
             }
         }
 
@@ -175,6 +171,7 @@ namespace ASCOM.VantagePro
 
         private bool Open_Socket()
         {
+            string op = "Open_Socket";
             IPsocket = null;
 
             try
@@ -188,12 +185,12 @@ namespace ASCOM.VantagePro
                 if (tempSocket.Connected)
                 {
                     IPsocket = tempSocket;
-                    tl.LogMessage("TryOpenSocket", $"Connected to {IPAddress}:{IPPort}");
+                    tl.LogMessage(op, $"Connected to {IPAddress}:{IPPort}");
                     return true;
                 }
             }
             catch (Exception ex) {
-                tl.LogMessage("TryOpenSocket", $"Caught: {ex.Message} at {ex.StackTrace}");
+                tl.LogMessage(op, $"Caught: {ex.Message} at {ex.StackTrace}");
                 throw;
             }
 
@@ -204,12 +201,12 @@ namespace ASCOM.VantagePro
         /// Disconnects and closes the IPsocket
         /// </summary>
         /// <returns>is IPsocket still connected</returns>
-        private bool TryCloseStation_Socket()
+        private bool Close_Socket()
         {
             try
             {
                 IPsocket.Disconnect(true);
-                tl.LogMessage("TryCloseSocket", $"Disconnected from {IPAddress}:{IPPort}");
+                tl.LogMessage("Close_Socket", $"Disconnected from {IPAddress}:{IPPort}");
                 IPsocket.Close();
                 return true;
             }
@@ -370,24 +367,15 @@ namespace ASCOM.VantagePro
 
         private string ByteArrayToString(byte[] arr)
         {
-            StringBuilder hex = new StringBuilder(arr.Length + 2);
+            StringBuilder hex = new StringBuilder(arr.Length * 3);
 
             foreach (byte b in arr)
-            {
-                if (Char.IsLetterOrDigit((char)b) || Char.IsWhiteSpace((char)b) || Char.IsPunctuation((char)b))
-                    hex.AppendFormat($" {(char) b}");
-                else
-                    hex.AppendFormat($"{b:X2}");
-                hex.Append(" ");
-            }
+                hex.AppendFormat($"{b:X2} ");
+
             return hex.ToString();
         }
 
         private void GetSensorData(byte[] buf) {
-            //
-            // Check the reply is valid - TBD verify the checksum
-            // buf[4] == 1 for LOOP2 packets
-            //
             string op = "GetSensorData";
 
             #region trace
@@ -478,7 +466,7 @@ namespace ASCOM.VantagePro
                         break;
 
                     case OpMode.IP:
-                        _connected = value ? Open_Socket() : TryCloseStation_Socket();
+                        _connected = value ? Open_Socket() : Close_Socket();
                         #region trace
                         tl.LogMessage("Connected", $"Socket: {IPAddress}:{IPPort}, connected: {_connected}");
                         #endregion
@@ -491,8 +479,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                Init();
-                return driverDescription;
+                return DriverDescription;
             }
         }
 
@@ -560,7 +547,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return $"v{version}";
+                return $"v{typeof(SetupDialogForm).Assembly.GetName().Version}";
             }
         }
 

@@ -510,35 +510,6 @@ namespace ASCOM.VantagePro
         #endregion
 
         #region private methods
-
-        #region calculate the gust strength as the largest wind recorded over the last two minutes
-
-        // save the time and wind speed values
-        private Dictionary<DateTime, double> winds = new Dictionary<DateTime, double>();
-
-        private double gustStrength;
-
-        private void UpdateGusts(double speed)
-        {
-            Dictionary<DateTime, double> newWinds = new Dictionary<DateTime, double>();
-            var last = DateTime.Now - TimeSpan.FromMinutes(2);
-            winds.Add(DateTime.Now, speed);
-            var gust = 0.0;
-            foreach (var item in winds)
-            {
-                if (item.Key > last)
-                {
-                    newWinds.Add(item.Key, item.Value);
-                    if (item.Value > gust)
-                        gust = item.Value;
-                }
-            }
-            gustStrength = gust;
-            winds = newWinds;
-        }
-
-        #endregion
-
         #endregion
 
         #region Private properties and methods

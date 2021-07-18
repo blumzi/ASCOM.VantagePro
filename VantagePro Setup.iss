@@ -25,6 +25,7 @@ WizardImageFile="C:\Program Files (x86)\ASCOM\Platform 6 Developer Components\In
 LicenseFile="Resources\LICENSE.GPL3"
 ; {cf}\ASCOM\Uninstall\ObservingConditions folder created by Platform, always
 UninstallFilesDir="{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
+MissingRunOnceIdsWarning=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -34,20 +35,16 @@ Name: "{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
 ; TODO: Add subfolders below {app} as needed (e.g. Name: "{app}\MyFolder")
 
 [Files]
-Source: "bin\Debug\ASCOM.VantagePro.ObservingConditions.dll"; DestDir: "{app}"
+Source: "bin\Release\ASCOM.VantagePro.ObservingConditions.dll"; DestDir: "{app}"
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
 Source: "ReadMe.md"; DestDir: "{app}"; Flags: isreadme
 ; TODO: Add other files needed by your driver here (add subfolders above)
-
 
 ; Only if driver is .NET
 [Run]
 ; Only for .NET assembly/in-proc drivers
 Filename: "{dotnet4032}\regasm.exe"; Parameters: "/codebase ""{app}\ASCOM.VantagePro.ObservingConditions.dll"""; Flags: runhidden 32bit
 Filename: "{dotnet4064}\regasm.exe"; Parameters: "/codebase ""{app}\ASCOM.VantagePro.ObservingConditions.dll"""; Flags: runhidden 64bit; Check: IsWin64
-
-
-
 
 ; Only if driver is .NET
 [UninstallRun]
@@ -56,9 +53,6 @@ Filename: "{dotnet4032}\regasm.exe"; Parameters: "-u ""{app}\ASCOM.VantagePro.Ob
 ; This helps to give a clean uninstall
 Filename: "{dotnet4064}\regasm.exe"; Parameters: "/codebase ""{app}\ASCOM.VantagePro.ObservingConditions.dll"""; Flags: runhidden 64bit; Check: IsWin64
 Filename: "{dotnet4064}\regasm.exe"; Parameters: "-u ""{app}\ASCOM.VantagePro.ObservingConditions.dll"""; Flags: runhidden 64bit; Check: IsWin64
-
-
-
 
 [Code]
 const
@@ -115,10 +109,9 @@ begin
       // Check whether an extry exists
       if RegQueryStringValue(HKLM, UninstallRegistry, 'UninstallString', UninstallExe) then
         begin // Entry exists and previous version is installed so run its uninstaller quietly after informing the user
-          MsgBox('Setup will now remove the previous version.', mbInformation, MB_OK);
+          // MsgBox('Setup will now remove the previous version.', mbInformation, MB_OK);
           Exec(RemoveQuotes(UninstallExe), ' /SILENT', '', SW_SHOWNORMAL, ewWaitUntilTerminated, ResultCode);
           sleep(1000);    //Give enough time for the install screen to be repainted before continuing
         end
   end;
 end;
-
