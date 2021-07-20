@@ -158,7 +158,8 @@
     </PreBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
-    <PostBuildEvent>"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DSolutionDir=$(SolutionDir)"  "/DProjectDir=$(ProjectDir)"/O"$(SolutionDir)\Solution Items" "$(ProjectDir)VantagePro Setup.iss</PostBuildEvent>
+    <PostBuildEvent>"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DSolutionDir=$(SolutionDir)"  "/DProjectDir=$(ProjectDir)"/O"$(SolutionDir)\Solution Items" "$(ProjectDir)VantagePro Setup.iss
+</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

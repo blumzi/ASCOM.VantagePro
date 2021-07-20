@@ -100,7 +100,7 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public OpMode OperationalMode { get; set; }
+        public static OpMode OperationalMode { get; set; }
         public bool Tracing { get; set; }
 
         public void Refresh_DataFile()
@@ -214,9 +214,10 @@ namespace ASCOM.VantagePro
             return false;
         }
 
-        public string SerialPortName { get; set;}
-        public string IPAddress { get; set; }
-        public short IPPort { get; set; }
+        public static string SerialPortName { get; set;}
+        public static int SerialPortSpeed { get; } = 19200;
+        public static string IPAddress { get; set; }
+        public static short IPPort { get; set; } = 22222;
 
         private bool Wakeup_Serial()
         {
@@ -403,8 +404,8 @@ namespace ASCOM.VantagePro
             double RH = buf[33];
             sensorData["outsideHumidity"] = RH.ToString();
 
-            double P = GetUshort(buf, 7) / 1000;
-            sensorData["barometer"] = util.ConvertUnits(P, Units.inHg, Units.hPa).ToString();
+            double P = GetUshort(buf, 7);
+            sensorData["barometer"] = (util.ConvertUnits(P, Units.inHg, Units.hPa) / 1000).ToString();
 
             double K = util.ConvertUnits(F, Units.degreesFahrenheit, Units.degreesKelvin);
             double Td = K - ((100 - RH) / 5);
@@ -539,7 +540,21 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return $"{Name} driver {DriverVersion}";
+                string info = null;
+                
+                switch (VantagePro.OperationalMode)
+                {
+                    case OpMode.File:
+                        info = $"Mode: ReportFile, file: {VantagePro.DataFile}";
+                        break;
+                    case OpMode.Serial:
+                        info = $"Mode: Serial, port: speed:, {VantagePro.serialPortSpeed}";
+                        break;
+                    case OpMode.IP:
+                        info = $"Mode: IP, address: {VantagePro.IPAddress}, port: {VantagePro.IPPort}";
+                        break;
+                }
+                return info;
             }
         }
 
@@ -579,12 +594,12 @@ namespace ASCOM.VantagePro
                 driverProfile.WriteValue(DriverId, Profile_DataFile, DataFile);
                 driverProfile.WriteValue(DriverId, Profile_SerialPort, SerialPortName);
                 driverProfile.WriteValue(DriverId, Profile_IPAddress, IPAddress);
-                driverProfile.WriteValue(DriverId, Profile_IPPort, Convert.ToString(IPPort));
-                driverProfile.WriteValue(DriverId, Profile_Tracing, Convert.ToString(Tracing));
+                driverProfile.WriteValue(DriverId, Profile_IPPort, IPPort.ToString());
+                driverProfile.WriteValue(DriverId, Profile_Tracing, Tracing.ToString());
             }
         }
 
-        public string DataFile { get; set; }
+        public static string DataFile { get; set; }
 
         #region IObservingConditions Implementation
 

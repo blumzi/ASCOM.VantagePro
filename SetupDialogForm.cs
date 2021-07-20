@@ -29,11 +29,6 @@ namespace ASCOM.VantagePro
 
         private void cmdOK_Click(object sender, EventArgs e) // OK button event handler
         {
-            bool ok = true;
-
-            if (radioButtonNone.Checked)
-                return;
-
             if (radioButtonSerialPort.Checked)
             {
                 string[] ports = System.IO.Ports.SerialPort.GetPortNames();
@@ -41,32 +36,32 @@ namespace ASCOM.VantagePro
 
                 if (portsList.Contains((string)comboBoxComPort.SelectedItem))
                 {
-                    vantagePro.SerialPortName = (string)comboBoxComPort.SelectedItem;
-                    vantagePro.OperationalMode = VantagePro.OpMode.Serial;
+                    VantagePro.SerialPortName = (string)comboBoxComPort.SelectedItem;
+                    VantagePro.OperationalMode = VantagePro.OpMode.Serial;
                 }
             }
             else if (radioButtonReportFile.Checked)
             {
                 if (System.IO.File.Exists(textBoxReportFile.Text))
                 {
-                    vantagePro.DataFile = textBoxReportFile.Text;
-                    vantagePro.OperationalMode = VantagePro.OpMode.File;
+                    VantagePro.DataFile = textBoxReportFile.Text;
+                    VantagePro.OperationalMode = VantagePro.OpMode.File;
                 }
             }
             else if (radioButtonIP.Checked)
             {
-                vantagePro.IPAddress = textBoxIPAddress.Text;
-                vantagePro.IPPort = Convert.ToInt16(textBoxIPPort.Text);
-                vantagePro.OperationalMode = VantagePro.OpMode.IP;
+                VantagePro.IPAddress = textBoxIPAddress.Text;
+                VantagePro.IPPort = Convert.ToInt16(textBoxIPPort.Text);
+                VantagePro.OperationalMode = VantagePro.OpMode.IP;
             }
-            else
-                ok = false;
+            else if (radioButtonNone.Checked)
+            {
+                VantagePro.OperationalMode = VantagePro.OpMode.None;
+            }
 
-            ObservingConditions.tl.Enabled = chkTrace.Checked;
-            vantagePro.Tracing = chkTrace.Checked;
+            vantagePro.Tracing = ObservingConditions.tl.Enabled = chkTrace.Checked;
 
-            if (ok)
-                vantagePro.WriteProfile();
+            vantagePro.WriteProfile();
         }
 
         private void cmdCancel_Click(object sender, EventArgs e) // Cancel button event handler
@@ -98,12 +93,12 @@ namespace ASCOM.VantagePro
             comboBoxComPort.Items.Clear();
             comboBoxComPort.Items.AddRange(System.IO.Ports.SerialPort.GetPortNames());      // use System.IO because it's static
 
-            if (comboBoxComPort.Items.Contains(vantagePro.SerialPortName))
+            if (comboBoxComPort.Items.Contains(VantagePro.SerialPortName))
             {
-                comboBoxComPort.SelectedItem = vantagePro.SerialPortName;
+                comboBoxComPort.SelectedItem = VantagePro.SerialPortName;
             }
 
-            switch (vantagePro.OperationalMode)
+            switch (VantagePro.OperationalMode)
             {
                 case VantagePro.OpMode.None:
                     radioButtonNone.Checked = true;
@@ -119,7 +114,7 @@ namespace ASCOM.VantagePro
                     break;
             }
 
-            textBoxReportFile.Text = vantagePro.DataFile;
+            textBoxReportFile.Text = VantagePro.DataFile;
             chkTrace.Checked = vantagePro.Tracing;
             labelTracePath.Text = chkTrace.Checked ? VantagePro.traceLogFile : "";
         }
