@@ -545,13 +545,13 @@ namespace ASCOM.VantagePro
                 switch (VantagePro.OperationalMode)
                 {
                     case OpMode.File:
-                        info = $"Mode: ReportFile, file: {VantagePro.DataFile}";
+                        info = $"Mode: File, file: {VantagePro.DataFile}";
                         break;
                     case OpMode.Serial:
-                        info = $"Mode: Serial, port: speed:, {VantagePro.serialPortSpeed}";
+                        info = $"Mode: Serial, port: {VantagePro.SerialPortName}@{VantagePro.serialPortSpeed}";
                         break;
                     case OpMode.IP:
-                        info = $"Mode: IP, address: {VantagePro.IPAddress}, port: {VantagePro.IPPort}";
+                        info = $"Mode: IP, address: {VantagePro.IPAddress}:{VantagePro.IPPort}";
                         break;
                 }
                 return info;
