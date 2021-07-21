@@ -250,14 +250,14 @@ namespace ASCOM.VantagePro
             string op = $"WakeUp_Socket [{IPAddress}:{IPPort}]";
             Open_Socket();
 
-            Byte[] bytesReceived = new byte[2];
-            int nBytes, attempt, maxAttempts = 3;
+            Byte[] rxBytes = new byte[2];
+            int nRxBytes, attempt, maxAttempts = 3;
 
             for (attempt = 0; attempt < maxAttempts; attempt++)
             {
                 IPsocket.Send(Encoding.ASCII.GetBytes("\r"), 1, 0);
-                nBytes = IPsocket.Receive(bytesReceived, bytesReceived.Length, 0);
-                if (nBytes == 2 && Encoding.ASCII.GetString(bytesReceived, 0, nBytes) == "\n\r")
+                nRxBytes = IPsocket.Receive(rxBytes, rxBytes.Length, 0);
+                if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytes, 0, nRxBytes) == "\n\r")
                 {
                     #region trace
                     tl.LogMessage(op, $"attempt: {attempt}, Success");
@@ -293,7 +293,7 @@ namespace ASCOM.VantagePro
             if (!Wakeup_Serial())
                 return;
 
-            byte[] buf = new byte[99];
+            byte[] rxBytes = new byte[99];
             serialPort.Write(txString);
             #region trace
             tl.LogMessage(op, $"Wrote: {txString} to {SerialPortName}");
@@ -312,19 +312,19 @@ namespace ASCOM.VantagePro
             #endregion
 
             Thread.Sleep(500);
-            int nbytes;
-            if ((nbytes = serialPort.Read(buf, 0, buf.Length)) != buf.Length)
+            int nRxBytes;
+            if ((nRxBytes = serialPort.Read(rxBytes, 0, rxBytes.Length)) != rxBytes.Length)
             {
                 #region trace
-                tl.LogMessage(op, $"Got {nbytes} bytes instead of {buf.Length}");
+                tl.LogMessage(op, $"Got {nRxBytes} bytes instead of {rxBytes.Length}");
                 #endregion
                 return;
             }
 
             #region trace
-            tl.LogMessage(op, $"Successfully read {buf.Length} bytes");
+            tl.LogMessage(op, $"Successfully read {rxBytes.Length} bytes");
             #endregion
-            GetSensorData(buf);
+            GetSensorData(rxBytes);
             _lastDataRead = DateTime.Now;
         }
 
@@ -351,10 +351,11 @@ namespace ASCOM.VantagePro
             tl.LogMessage(op, $"Got ACK (0x{rxBytes[0]:X2})");
             #endregion
 
-            if (IPsocket.Receive(rxBytes, rxBytes.Length, 0) != rxBytes.Length)
+            int nRxBytes;
+            if ((nRxBytes = IPsocket.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
             {
                 #region trace
-                tl.LogMessage(op, $"Failed to receive {rxBytes.Length} bytes from {IPAddress}:{IPPort}");
+                tl.LogMessage(op, $"Failed to receive {rxBytes.Length} bytes from {IPAddress}:{IPPort}, received only {nRxBytes} bytes");
                 #endregion
                 return;
             }

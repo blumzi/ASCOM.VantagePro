@@ -7,7 +7,7 @@
 #define VantageProDll "bin\Release\ASCOM.VantagePro.ObservingConditions.dll"
 #define asmbVersion GetStringFileInfo(VantageProDll,"FileVersion")
 
-AppID={{43b538d0-0d73-47a0-9552-f60f9898e943}
+AppID={{43b538d0-0d73-47a0-9552-f60f9898e943}}
 AppName=ASCOM VantagePro ObservingConditions Driver
 AppVersion={#asmbVersion}
 AppVerName=ASCOM VantagePro ObservingConditions Driver 1.2
@@ -15,7 +15,7 @@ AppPublisher=Arie Blumenzweig <theblumz@gmail.com>
 AppPublisherURL=mailto:theblumz@gmail.com
 AppSupportURL=http://tech.groups.yahoo.com/group/ASCOM-Talk/
 AppUpdatesURL=http://ascom-standards.org/
-VersionInfoVersion=1.2
+VersionInfoVersion={#asmbVersion}
 ;MinVersion=0,5.0.2195sp4
 DefaultDirName="{commoncf}\ASCOM\ObservingConditions"
 DisableDirPage=yes
@@ -29,7 +29,7 @@ WizardImageFile="C:\Program Files (x86)\ASCOM\Platform 6 Developer Components\In
 LicenseFile="Resources\LICENSE.GPL3"
 ; {cf}\ASCOM\Uninstall\ObservingConditions folder created by Platform, always
 UninstallFilesDir="{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
-;MissingRunOnceIdsWarning=no
+MissingRunOnceIdsWarning=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
