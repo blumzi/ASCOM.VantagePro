@@ -564,13 +564,13 @@ namespace ASCOM.VantagePro
                 switch (VantagePro.OperationalMode)
                 {
                     case OpMode.File:
-                        info = $"Mode: File, file: {VantagePro.DataFile}";
+                        info = $"Mode: File: {VantagePro.DataFile}";
                         break;
                     case OpMode.Serial:
-                        info = $"Mode: Serial, port: {VantagePro.SerialPortName}@{VantagePro.serialPortSpeed}";
+                        info = $"Mode: Serial: {VantagePro.SerialPortName} at {VantagePro.serialPortSpeed} baud";
                         break;
                     case OpMode.IP:
-                        info = $"Mode: IP, address: {VantagePro.IPAddress}:{VantagePro.IPPort}";
+                        info = $"Mode: IP:  {VantagePro.IPAddress}:{VantagePro.IPPort}";
                         break;
                 }
                 return info;
@@ -594,12 +594,12 @@ namespace ASCOM.VantagePro
             {
                 Enum.TryParse<OpMode>(driverProfile.GetValue(DriverId, Profile_OpMode, string.Empty, OpMode.File.ToString()), out OpMode mode);
                 OperationalMode = mode;
+
                 DataFile = driverProfile.GetValue(DriverId, Profile_DataFile, string.Empty, "");
                 SerialPortName = driverProfile.GetValue(DriverId, Profile_SerialPort, string.Empty, "");
                 IPAddress = driverProfile.GetValue(DriverId, Profile_IPAddress, string.Empty, "");
                 IPPort = Convert.ToInt16(driverProfile.GetValue(DriverId, Profile_IPPort, string.Empty, "22222"));
-                Tracing = Convert.ToBoolean(driverProfile.GetValue(DriverId, Profile_Tracing, string.Empty, "True"));
-            }
+                Tracing = Convert.ToBoolean(driverProfile.GetValue(DriverId, Profile_Tracing, string.Empty, "False")); }
         }
 
         /// <summary>
@@ -892,12 +892,12 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public double MPS(double kmh)
+        public static double MPS(double kmh)
         {
             return kmh * (1000.0 / 3600.0);
         }
 
-        public double KMH(double mps)
+        public static double KMH(double mps)
         {
             return mps * 3.6;
         }

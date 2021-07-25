@@ -1,0 +1,114 @@
+Conform Report Hash (V1): DBF44B94A8ACDAF728029A5E3F6A678820D002AF1F474C4ED8C39CBD961AAA6268901CCC9912A7ED894F9F20EF4529324C67919F8D01705F265104A9CAE4557E
+
+ 
+ConformanceCheck ASCOM Device Conformance Checker Version 6.5.7500.22514, Build time: 7/14/2020 12:30:28 PM
+ConformanceCheck Running on: ASCOM Platform 6.5 SP1 6.5.1.3234
+ 
+ConformanceCheck Driver ProgID: ASCOM.VantagePro.ObservingConditions
+ 
+Error handling 
+Error number for "Not Implemented" is: 80040400
+Error number for "Invalid Value 1" is: 80040405
+Error number for "Value Not Set 1" is: 80040402
+Error number for "Value Not Set 2" is: 80040403
+Error messages will not be interpreted to infer state.
+ 
+08:49:17.916 Driver Access Checks              OK       
+08:49:18.556 AccessChecks                      OK       Successfully created driver using late binding
+08:49:18.574 AccessChecks                      OK       Successfully connected using late binding
+08:49:18.583 AccessChecks                      INFO     The driver is a .NET object
+08:49:18.590 AccessChecks                      INFO     The AssemblyQualifiedName is: ASCOM.VantagePro.ObservingConditions, ASCOM.VantagePro.ObservingConditions, 
+08:49:18.597 AccessChecks                      INFO     The driver implements interface: ASCOM.DeviceInterface.IObservingConditions
+08:49:19.248 AccessChecks                      INFO     Device exposes Interface IObservingConditions
+08:49:19.906 AccessChecks                      OK       Successfully created driver Using driver access toolkit
+08:49:19.918 AccessChecks                      OK       Successfully connected Using driver access toolkit
+ 
+Conform is using ASCOM.DriverAccess.ObservingConditions to get an ObservingConditions object
+08:49:19.985 ConformanceCheck                  OK       Driver instance created successfully
+08:49:20.047 ConformanceCheck                  OK       Connected OK
+ 
+Common Driver Methods 
+08:49:20.104 InterfaceVersion                  OK       1
+08:49:20.142 Connected                         OK       True
+08:49:20.179 Description                       OK       VantagePro ASCOM Driver v1.2.7876.15720
+08:49:20.215 DriverInfo                        OK       Mode: Serial: COM1 at 19200 baud
+08:49:20.250 DriverVersion                     OK       v1.2.7876.15720
+08:49:20.285 Name                              OK       VantagePro
+08:49:20.320 CommandString                     INFO     Conform cannot test the CommandString method
+08:49:20.331 CommandBlind                      INFO     Conform cannot test the CommandBlind method
+08:49:20.345 CommandBool                       INFO     Conform cannot test the CommandBool method
+08:49:20.356 Action                            INFO     Conform cannot test the Action method
+08:49:20.367 SupportedActions                  OK       Found action: raw-data
+08:49:20.373 SupportedActions                  OK       Found action: OCHTag
+ 
+Properties 
+08:49:20.488 AveragePeriod                     OK       0
+08:49:20.498 AveragePeriod Write               OK       Invalid Value exception generated as expected on set average period < -1.0
+08:49:20.505 AveragePeriod Write               OK       Successfully set average period to 0.0
+08:49:20.517 AveragePeriod Write               OK       Invalid value exception thrown when average period is set to 5.0, which is permitted by the specification
+08:49:20.524 AveragePeriod Write               OK       Successfully restored original average period: 0
+08:49:20.534 CloudCover                        OK       Optional member threw a PropertyNotImplementedException exception.
+08:49:21.060 DewPoint                          OK       17.088888888889
+08:49:21.641 Humidity                          OK       76
+08:49:21.654 DewPoint & Humidity               OK       Dew point and humidity are both implemented per the interface specification
+08:49:22.187 Pressure                          OK       1005.0122781248
+08:49:22.718 RainRate                          OK       0
+08:49:22.735 SkyBrightness                     OK       Optional member threw a PropertyNotImplementedException exception.
+08:49:22.753 SkyQuality                        OK       Optional member threw a PropertyNotImplementedException exception.
+08:49:22.767 StarFWHM                          OK       Optional member threw a PropertyNotImplementedException exception.
+08:49:22.778 SkyTemperature                    OK       Optional member threw a PropertyNotImplementedException exception.
+08:49:23.304 Temperature                       OK       21.888888888889
+08:49:23.837 WindDirection                     OK       327
+08:49:23.848 WindGust                          OK       Optional member threw a PropertyNotImplementedException exception.
+08:49:24.376 WindSpeed                         OK       1.36595553821988
+ 
+Methods 
+08:49:24.966 TimeSinceLastUpdateLatest         OK       0
+08:49:24.986 TimeSinceLastUpdateCloudCover     OK       Optional member threw a MethodNotImplementedException exception.
+08:49:25.524 TimeSinceLastUpdateDewPoint       OK       0
+08:49:26.057 TimeSinceLastUpdateHumidity       OK       0
+08:49:26.072 DewPoint & Humidity               OK       Dew point and humidity are both implemented per the interface specification
+08:49:26.606 TimeSinceLastUpdatePressure       OK       0
+08:49:27.139 TimeSinceLastUpdateRainRate       OK       0
+08:49:27.157 TimeSinceLastUpdateSkyBrightness  OK       Optional member threw a MethodNotImplementedException exception.
+08:49:27.172 TimeSinceLastUpdateSkyQuality     OK       Optional member threw a MethodNotImplementedException exception.
+08:49:27.190 TimeSinceLastUpdateStarFWHM       OK       Optional member threw a MethodNotImplementedException exception.
+08:49:27.201 TimeSinceLastUpdateSkyTemperature OK       Optional member threw a MethodNotImplementedException exception.
+08:49:27.728 TimeSinceLastUpdateTemperature    OK       0
+08:49:28.263 TimeSinceLastUpdateWindDirection  OK       0
+08:49:28.283 TimeSinceLastUpdateWindGust       OK       Optional member threw a MethodNotImplementedException exception.
+08:49:28.817 TimeSinceLastUpdateWindSpeed      OK       0
+08:49:29.355 Refresh                           OK       Refreshed OK
+08:49:29.375 SensorDescriptionCloudCover       OK       Optional member threw a MethodNotImplementedException exception.
+08:49:29.393 SensorDescriptionDewPoint         OK       SensorDescription - DewPoint
+08:49:29.412 SensorDescriptionHumidity         OK       SensorDescription - Humidity
+08:49:29.422 DewPoint & Humidity               OK       Dew point and humidity are both implemented per the interface specification
+08:49:29.435 SensorDescriptionPressure         OK       SensorDescription - Pressure
+08:49:29.447 SensorDescriptionRainRate         OK       SensorDescription - RainRate
+08:49:29.458 SensorDescriptionSkyBrightness    OK       Optional member threw a MethodNotImplementedException exception.
+08:49:29.470 SensorDescriptionSkyQuality       OK       Optional member threw a MethodNotImplementedException exception.
+08:49:29.488 SensorDescriptionStarFWHM         OK       Optional member threw a MethodNotImplementedException exception.
+08:49:29.508 SensorDescriptionSkyTemperature   OK       Optional member threw a MethodNotImplementedException exception.
+08:49:29.534 SensorDescriptionTemperature      OK       SensorDescription - Temperature
+08:49:29.542 SensorDescriptionWindDirection    OK       SensorDescription - WindDirection
+08:49:29.558 SensorDescriptionWindGust         OK       Optional member threw a MethodNotImplementedException exception.
+08:49:29.570 SensorDescriptionWindSpeed        OK       SensorDescription - WindSpeed
+08:49:29.586 Consistency - CloudCover          OK       Sensor value, description and time since last update are all not implemented as required by the specification
+08:49:29.604 Consistency - DewPoint            OK       Sensor value, description and time since last update are all implemented as required by the specification
+08:49:29.620 Consistency - Humidity            OK       Sensor value, description and time since last update are all implemented as required by the specification
+08:49:29.636 Consistency - Pressure            OK       Sensor value, description and time since last update are all implemented as required by the specification
+08:49:29.653 Consistency - RainRate            OK       Sensor value, description and time since last update are all implemented as required by the specification
+08:49:29.669 Consistency - SkyBrightness       OK       Sensor value, description and time since last update are all not implemented as required by the specification
+08:49:29.685 Consistency - SkyQuality          OK       Sensor value, description and time since last update are all not implemented as required by the specification
+08:49:29.702 Consistency - SkyTemperature      OK       Sensor value, description and time since last update are all not implemented as required by the specification
+08:49:29.718 Consistency - StarFWHM            OK       Sensor value, description and time since last update are all not implemented as required by the specification
+08:49:29.732 Consistency - Temperature         OK       Sensor value, description and time since last update are all implemented as required by the specification
+08:49:29.749 Consistency - WindDirection       OK       Sensor value, description and time since last update are all implemented as required by the specification
+08:49:29.762 Consistency - WindGust            OK       Sensor value, description and time since last update are all not implemented as required by the specification
+08:49:29.775 Consistency - WindSpeed           OK       Sensor value, description and time since last update are all implemented as required by the specification
+ 
+Conformance test complete 
+ 
+No errors, warnings or issues found: your driver passes ASCOM validation!! 
+ 
+Driver Hash Value: 4DB1D5982CEBCA34897687B134851185B7E52051FF1938C24828FDD7971BA460176DAA8A28D7635B489F94CACC7230564012A4ED6B35F3BFCA90EBBCDFF533EB

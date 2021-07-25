@@ -7,6 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VantagePro", "VantagePro.cs
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{12975955-F0BA-4872-9569-A3045FB5AAB9}"
 	ProjectSection(SolutionItems) = preProject
+		Solution Items\ASCOM.VantagePro.ObservingConditions.Validation-Serial.txt = Solution Items\ASCOM.VantagePro.ObservingConditions.Validation-Serial.txt
 		VantagePro Setup.exe = VantagePro Setup.exe
 	EndProjectSection
 EndProject
