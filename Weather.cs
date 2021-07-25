@@ -14,6 +14,8 @@ namespace Weather
         {
             ClarityII,
             WeatherLink_HtmlReport,
+            WeatherLink_Serial,
+            WeatherLink_IP,
             TessW,
         };
 
