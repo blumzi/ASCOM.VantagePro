@@ -27,7 +27,7 @@ namespace Weather
             get;
         }
 
-        public abstract WeatherStationModel Model
+        public abstract string Model
         {
             get;
         }

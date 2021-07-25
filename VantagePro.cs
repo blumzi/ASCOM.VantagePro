@@ -100,6 +100,72 @@ namespace ASCOM.VantagePro
             }
         }
 
+        private static readonly Dictionary<byte, string> ValueToStationModel = new Dictionary<byte, string>
+        {
+            {  0, "Wizard III" },
+            {  1, "Wizard II" },
+            {  2, "Monitor" },
+            {  3, "Perception" },
+            {  4, "GroWeather" },
+            {  5, "Energy Enviromonitor" },
+            {  6, "Health Enviromonitor" },
+            { 16, "Vantage Pro or Vantage Pro 2" },
+            { 17, "Vantage Vue" },
+        };
+
+        private string GetStationType()
+        {
+            char[] txBytes = { 'W', 'R', 'D', (char) 0x12, (char) 0x4d, '\n' };
+            byte[] rxBytes = new byte[2];
+            int nRxBytes = 0;
+            string op = "GetStationType";
+
+            switch (OperationalMode)
+            {
+                case OpMode.Serial:
+                    Wakeup_Serial();
+                    serialPort.Write(txBytes, 0, txBytes.Length);
+                    Thread.Sleep(500);
+                    rxBytes = Encoding.ASCII.GetBytes(serialPort.ReadExisting());
+                    nRxBytes = rxBytes.Length;
+                    break;
+
+                case OpMode.IP:
+                    Wakeup_Socket();
+                    IPsocket.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
+                    nRxBytes = IPsocket.Receive(rxBytes, rxBytes.Length, 0);
+                    break;
+
+                case OpMode.File:
+                    return "Unknown";
+            }
+
+            if (nRxBytes < 2)
+            {
+                #region trace
+                tl.LogMessage(op, $"Got only {nRxBytes} bytes (instead of 2)");
+                #endregion
+                return null;
+            }
+
+            if (rxBytes[0] != ACK)
+            {
+                #region trace
+                tl.LogMessage(op, $"First byte is 0x{rxBytes[0]:X} instead of ACK");
+                #endregion
+                return null;
+            }
+
+            try
+            {
+                return ValueToStationModel[rxBytes[1]];
+            }
+            catch
+            {
+                return $"Unknown (byte[1]: {rxBytes[1]})";
+            }
+        }
+
         public static OpMode OperationalMode { get; set; }
         public bool Tracing { get; set; }
 
@@ -451,6 +517,8 @@ namespace ASCOM.VantagePro
             _initialized = true;
         }
 
+        private static string StationType { get; set; }
+
         public bool Connected
         {
             get
@@ -539,7 +607,7 @@ namespace ASCOM.VantagePro
                 {
                     Name = _name,
                     Vendor = Vendor.ToString(),
-                    Model = Model.ToString(),
+                    Model = Model,
                     SensorData = sensorData,
                 };
 
@@ -559,21 +627,34 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string info = null;
-                
+                string info = $"station model: {Instance.GetStationType()}, ";
+
+
                 switch (VantagePro.OperationalMode)
                 {
                     case OpMode.File:
-                        info = $"Mode: File: {VantagePro.DataFile}";
+                        info += $"file interface ({VantagePro.DataFile})";
                         break;
                     case OpMode.Serial:
-                        info = $"Mode: Serial: {VantagePro.SerialPortName} at {VantagePro.serialPortSpeed} baud";
+                        info += $"serial interface ({VantagePro.SerialPortName} at {VantagePro.serialPortSpeed} baud)";
                         break;
                     case OpMode.IP:
-                        info = $"Mode: IP:  {VantagePro.IPAddress}:{VantagePro.IPPort}";
+                        info += $"socket interface ({VantagePro.IPAddress}:{VantagePro.IPPort})";
                         break;
                 }
+
+                var v = AssemblyVersion;
+                DateTime buildTime = new DateTime(2000, 1, 1).AddDays(v.Build).AddSeconds(v.Revision * 2);
+                info += $", built at: {buildTime}";
                 return info;
+            }
+        }
+
+        private static Version AssemblyVersion
+        {
+            get
+            {
+                return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
             }
         }
 
@@ -581,7 +662,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return $"v{typeof(SetupDialogForm).Assembly.GetName().Version}";
+                return $"v{AssemblyVersion}";
             }
         }
 
@@ -592,7 +673,7 @@ namespace ASCOM.VantagePro
         {
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
-                Enum.TryParse<OpMode>(driverProfile.GetValue(DriverId, Profile_OpMode, string.Empty, OpMode.File.ToString()), out OpMode mode);
+                Enum.TryParse<OpMode>(driverProfile.GetValue(DriverId, Profile_OpMode, string.Empty, OpMode.None.ToString()), out OpMode mode);
                 OperationalMode = mode;
 
                 DataFile = driverProfile.GetValue(DriverId, Profile_DataFile, string.Empty, "");
@@ -877,7 +958,7 @@ namespace ASCOM.VantagePro
             get
             {
                 Refresh();
-                return Convert.ToDouble(sensorData["windDir"]);
+                return WindSpeedMps == 0.0 ? 0.0 : Convert.ToDouble(sensorData["windDir"]);
             }
         }
 
@@ -950,11 +1031,11 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public override WeatherStationModel Model
+        public override string Model
         {
             get
             {
-                return WeatherStationModel.VantagePro2;
+                return StationType;
             }
         }
 
