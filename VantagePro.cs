@@ -645,7 +645,7 @@ namespace ASCOM.VantagePro
 
                 var v = AssemblyVersion;
                 DateTime buildTime = new DateTime(2000, 1, 1).AddDays(v.Build).AddSeconds(v.Revision * 2);
-                info += $", built at: {buildTime}";
+                info += $", built on: {buildTime:dddd, dd MMMM yyyy HH:mm:ss}";
                 return info;
             }
         }
