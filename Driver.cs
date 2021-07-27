@@ -585,7 +585,7 @@ namespace ASCOM.VantagePro
         [ComUnregisterFunction]
         public static void UnregisterASCOM(Type _)
         {
-            RegUnregASCOM(false);
+            //RegUnregASCOM(false);
         }
 
         #endregion
