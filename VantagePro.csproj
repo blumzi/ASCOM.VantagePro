@@ -124,7 +124,6 @@
     <None Include="ASCOMDriverTemplate.snk" />
     <None Include="COPYING" />
     <None Include="Files\Weather_Vantage_Pro.htx" />
-    <None Include="GetGitVersion.sh" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

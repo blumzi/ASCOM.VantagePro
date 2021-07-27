@@ -117,6 +117,7 @@ namespace ASCOM.VantagePro
             textBoxReportFile.Text = VantagePro.DataFile;
             chkTrace.Checked = vantagePro.Tracing;
             labelTracePath.Text = chkTrace.Checked ? VantagePro.traceLogFile : "";
+            textBoxIPAddress.Text = VantagePro.IPAddress;
         }
 
         private void buttonChooser_Click(object sender, EventArgs e)

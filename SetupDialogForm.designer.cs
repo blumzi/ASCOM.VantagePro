@@ -85,8 +85,8 @@ namespace ASCOM.VantagePro
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(277, 60);
             this.label1.TabIndex = 2;
-            this.label1.Text = "An ASCOM ObservingConditions driver\r\nfor the VantagePro2 weather station\r\nby Davi" +
-    "s Systems";
+            this.label1.Text = "An ASCOM ObservingConditions driver\r\nfor various weather stations\r\nby Davis Syste" +
+    "ms";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // picASCOM
