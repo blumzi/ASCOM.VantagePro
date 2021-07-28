@@ -35,12 +35,14 @@ namespace ASCOM.VantagePro
         private static readonly Util util = new Util();
         private const byte ACK = 0x6;
 
+        private readonly TimeSpan refreshInterval = TimeSpan.FromSeconds(30);
+
         public VantagePro() { }
 
         static VantagePro() { }
 
         private Dictionary<string, string> sensorData = null;
-        private DateTime _lastDataRead = DateTime.MinValue;
+        private DateTime lastDataRead = DateTime.MinValue;
 
         private static readonly Lazy<VantagePro> lazy = new Lazy<VantagePro>(() => new VantagePro()); // Singleton
 
@@ -85,18 +87,22 @@ namespace ASCOM.VantagePro
         /// </summary>
         public void Refresh()
         {
-            switch (OperationalMode) {
-            case OpMode.File:
-                Refresh_DataFile();
-                break;
+            if (DateTime.Now < lastDataRead + refreshInterval)
+                return;
 
-            case OpMode.Serial:
-                Refresh_Serial();
-                break;
+            switch (OperationalMode)
+            {
+                case OpMode.File:
+                    Refresh_DataFile();
+                    break;
 
-            case OpMode.IP:
-                Refresh_Socket();
-                break;
+                case OpMode.Serial:
+                    Refresh_Serial();
+                    break;
+
+                case OpMode.IP:
+                    Refresh_Socket();
+                    break;
             }
         }
 
@@ -179,7 +185,7 @@ namespace ASCOM.VantagePro
                     return;
             }
 
-            if (_lastDataRead == DateTime.MinValue || File.GetLastWriteTime(DataFile).CompareTo(_lastDataRead) > 0)
+            if (lastDataRead == DateTime.MinValue || File.GetLastWriteTime(DataFile).CompareTo(lastDataRead) > 0)
             {
                 if (sensorData == null)
                     sensorData = new Dictionary<string, string>();
@@ -204,7 +210,7 @@ namespace ASCOM.VantagePro
                                 sensorData[words[0]] = words[1];
                             }
 
-                            _lastDataRead = DateTime.Now;
+                            lastDataRead = DateTime.Now;
                         }
                     } catch
                     {
@@ -400,7 +406,7 @@ namespace ASCOM.VantagePro
             }
 
             ParseSensorData(rxBytes);
-            _lastDataRead = DateTime.Now;
+            lastDataRead = DateTime.Now;
         }
 
         private void Refresh_Socket()
@@ -448,7 +454,7 @@ namespace ASCOM.VantagePro
             }
 
             ParseSensorData(rxBytes);
-            _lastDataRead = DateTime.Now;
+            lastDataRead = DateTime.Now;
         }
 
         private string ByteArrayToString(byte[] arr)
@@ -940,7 +946,7 @@ namespace ASCOM.VantagePro
             }
             else
             {
-                seconds = (DateTime.UtcNow - _lastDataRead.ToUniversalTime()).TotalSeconds;
+                seconds = (DateTime.UtcNow - lastDataRead.ToUniversalTime()).TotalSeconds;
             }
 
             return seconds;

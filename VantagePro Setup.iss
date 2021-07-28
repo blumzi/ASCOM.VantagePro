@@ -41,9 +41,9 @@ Name: "{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
 [Files]
 Source: {#VantageProDll}; DestDir: "{app}"
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
-Source: "ReadMe.md"; DestDir: "{app}"; Flags: isreadme
+Source: "VantagePro_ReadMe.md"; DestDir: "{app}"; Flags: isreadme
 ; TODO: Add other files needed by your driver here (add subfolders above)
-Source: "Files\Weather_Vantage_Pro.htx"; DestDir: "{app}"
+Source: "Files\VantagePro.htx"; DestDir: "{app}"
 
 ; Only if driver is .NET
 [Run]
