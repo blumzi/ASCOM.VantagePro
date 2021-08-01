@@ -30,7 +30,7 @@ namespace ASCOM.VantagePro
         private bool _initialized = false;
 
         public static readonly string traceLogFile = $"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\VantagePro-{DriverVersion}.log";
-        public static TraceLogger tl = new TraceLogger(traceLogFile, "VantagePro");
+        public static TraceLogger tl;
 
         private static readonly Util util = new Util();
         private const byte ACK = 0x6;
@@ -517,7 +517,14 @@ namespace ASCOM.VantagePro
             _name = "VantagePro";
             sensorData = new Dictionary<string, string>();
             ReadProfile();
-            tl.Enabled = Tracing;
+
+            if (Tracing)
+                Directory.CreateDirectory(Path.GetDirectoryName(traceLogFile));
+            tl = new TraceLogger(traceLogFile, "VantagePro")
+            {
+                Enabled = Tracing
+            };
+
             Refresh();
 
             _initialized = true;
