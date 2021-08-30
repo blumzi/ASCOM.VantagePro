@@ -1,31 +1,44 @@
+
 # ASCOM *VantagePro2* driver
-This is an **ASCOM** *ObservingConditions* driver for the *VantagePro2* weather station, by Davis Instruments.
+The _VantagePro2_ weather station is usually serviced by the vendor-supplied _WeatherLink_ software, no **ASCOM** driver is supplied.
 
-The VantagePro2 station is usually serviced on a Windows system by the *WeatherLink* software, supplied by the vendor (no ASCOM driver is supplied)
+This **ASCOM** *ObservingConditions* driver bridges this gap.
 
-The station can be connected via several hardware interfaces, but an RS232 serial port is very common.  While *WeatherLink* uses the serial port no other software can connect to the station.
-
-This driver provides **ASCOM** compliant access to the station's weather data in one of the following two operational modes (selectable via the driver's *Setup* window)
 
 ## Operational modes
-### The *WeatherLink* report-file operational mode
+The driver accesses the station's data in one of three operational modes, selectable via the driver's _Setup_ window
 
-The *WeatherLink* software can be set-up to periodically prepare an *HTML* report-file (minimal interval is 1 minute), based on
-a user-supplied template.
+- ### *WeatherLink* report
 
-The template supplied with the driver exposes all the internal data elements maintained by the weather station.
+The driver capitalizes on _WeatherLink_'s capability to produce a periodic report.  The report is parsed and the 
+data is presented in an **ASCOM** _ObservingConditions_ compliant manner.  This allows the user to continue 
+enjoying _WeatherLink_'s capabilities while gaining **ASCOM** compatibility.
 
-The driver periodically parses the report-file (a valid path must be provided at *Setup* time) and presents it in **ASCOM** *ObservingConditions* protocol.
+The *WeatherLink* software is set-up to periodically (minimal interval is 1 minute) prepare an *HTML* report-file, using a template supplied by this driver's installation (VantagePro.htx) , thus  exposing the weather station's internal data elements.
 
-### The serial port operational mode
-If this mode is selected at *Setup* time and a valid serial port (e.g. _**COM1**_) is supplied,
-the driver will connect directly to the station and get the relevant data.
+The driver periodically parses the report-file (a valid path must be provided at _Setup_ time) and presents it as an **ASCOM** *ObservingConditions* object.
+
+- ### Serial-port
+The driver will directly connect the station and get the relevant data (the serial-port, e.g. _**COM1**_, is supplied at _Setup_ time).
 
 In this mode the *WeatherLink* software cannot be used, as it will no longer get access to the serial port.
 
-## Special actions
-The driver supports the following special actions:
+- ### WeatherLinkIP
+The driver will directly connect the station's IP address (settable in the _Setup_ form), on port 22222.
+
+## Weather properties
+The driver exposes the following _ObservingConditions_ properties:
+
+* DewPoint
+* Humidity
+* Pressure
+* RainRate
+* WindSpeed 
+* WindDirection
+* TimeSinceLastUpdate
+
+## Supported actions
+The driver supports the following actions:
 
 * _**`raw-data`** (no parameters)_: produces a *JSON* string containing all the raw data gathered from the weather station (lots of it :-).
 * _**`OCHTag`** (no-parameters)_: produces a tag which can be used by the _**OCH**_ (*Observing Conditions Hub*) to redirect actions to this specific driver.
-* _**`forecast`** (no parameters)_: gets the *forecast* string produced by the weather station.
