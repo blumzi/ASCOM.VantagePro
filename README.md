@@ -1,4 +1,3 @@
-
 # ASCOM *VantagePro2* driver
 The _VantagePro2_ weather station is usually serviced by the vendor-supplied _WeatherLink_ software, no **ASCOM** driver is supplied.
 
