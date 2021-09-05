@@ -131,6 +131,7 @@
     </None>
     <Content Include="ASCOM.ico" />
     <Content Include="Files\VantagePro.htm" />
+    <None Include="README.md" />
     <None Include="VantagePro_Readme.md" />
     <None Include="Resources\ASCOM.bmp" />
   </ItemGroup>

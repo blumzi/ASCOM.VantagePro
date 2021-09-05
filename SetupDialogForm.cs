@@ -173,5 +173,46 @@ namespace ASCOM.VantagePro
         {
             labelTracePath.Text = (sender as CheckBox).Checked ? VantagePro.traceLogFile : "";
         }
+
+        private void buttonTest_Click(object sender, EventArgs e)
+        {
+            string result = null;
+            Color resultColor = (sender as Button).ForeColor;
+
+            if (radioButtonNone.Checked)
+            {
+                MessageBox.Show("Please select an operational mode other than \"None\"!", "Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            VantagePro.tl.Enabled = chkTrace.Checked;
+            buttonTest.Text = "Testing ...";
+            if (radioButtonReportFile.Checked)
+            {
+                vantagePro.TestFileSettings(textBoxReportFile.Text, ref result, ref resultColor);
+            }
+            else if (radioButtonSerialPort.Checked)
+            {
+                vantagePro.TestSerialSettings(comboBoxComPort.Text, ref result, ref resultColor);
+            }
+            else if (radioButtonIP.Checked)
+            {
+                vantagePro.TestIPSettings(textBoxIPAddress.Text, ref result, ref resultColor);
+            }
+
+            if (resultColor == vantagePro.colorGood)
+            {
+                MessageBox.Show(result, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else if (resultColor == vantagePro.colorWarning)
+            {
+                MessageBox.Show(result, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+            else if (resultColor == vantagePro.colorError)
+            {
+                MessageBox.Show(result, "Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            buttonTest.Text = "Test configuration";
+        }
     }
 }

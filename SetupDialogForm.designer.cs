@@ -49,6 +49,7 @@ namespace ASCOM.VantagePro
             this.textBoxIPPort = new System.Windows.Forms.TextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.labelTracePath = new System.Windows.Forms.Label();
+            this.buttonTest = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.groupBoxOpMode.SuspendLayout();
             this.SuspendLayout();
@@ -58,7 +59,7 @@ namespace ASCOM.VantagePro
             this.cmdOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdOK.CausesValidation = false;
             this.cmdOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.cmdOK.Location = new System.Drawing.Point(538, 157);
+            this.cmdOK.Location = new System.Drawing.Point(536, 193);
             this.cmdOK.Name = "cmdOK";
             this.cmdOK.Size = new System.Drawing.Size(59, 24);
             this.cmdOK.TabIndex = 0;
@@ -70,7 +71,7 @@ namespace ASCOM.VantagePro
             // 
             this.cmdCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cmdCancel.Location = new System.Drawing.Point(538, 187);
+            this.cmdCancel.Location = new System.Drawing.Point(536, 229);
             this.cmdCancel.Name = "cmdCancel";
             this.cmdCancel.Size = new System.Drawing.Size(59, 25);
             this.cmdCancel.TabIndex = 1;
@@ -108,14 +109,14 @@ namespace ASCOM.VantagePro
             this.label2.AutoSize = true;
             this.label2.Location = new System.Drawing.Point(145, 137);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(58, 13);
+            this.label2.Size = new System.Drawing.Size(55, 13);
             this.label2.TabIndex = 5;
-            this.label2.Text = "Comm Port";
+            this.label2.Text = "Serial Port";
             // 
             // chkTrace
             // 
             this.chkTrace.AutoSize = true;
-            this.chkTrace.Location = new System.Drawing.Point(37, 200);
+            this.chkTrace.Location = new System.Drawing.Point(41, 234);
             this.chkTrace.Name = "chkTrace";
             this.chkTrace.Size = new System.Drawing.Size(69, 17);
             this.chkTrace.TabIndex = 6;
@@ -216,7 +217,7 @@ namespace ASCOM.VantagePro
             // 
             this.buttonChooser.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.buttonChooser.CausesValidation = false;
-            this.buttonChooser.Location = new System.Drawing.Point(538, 110);
+            this.buttonChooser.Location = new System.Drawing.Point(537, 110);
             this.buttonChooser.Name = "buttonChooser";
             this.buttonChooser.Size = new System.Drawing.Size(59, 25);
             this.buttonChooser.TabIndex = 14;
@@ -259,16 +260,27 @@ namespace ASCOM.VantagePro
             // 
             // labelTracePath
             // 
-            this.labelTracePath.Location = new System.Drawing.Point(112, 201);
+            this.labelTracePath.Location = new System.Drawing.Point(116, 235);
             this.labelTracePath.Name = "labelTracePath";
             this.labelTracePath.Size = new System.Drawing.Size(419, 16);
             this.labelTracePath.TabIndex = 19;
+            // 
+            // buttonTest
+            // 
+            this.buttonTest.Location = new System.Drawing.Point(148, 196);
+            this.buttonTest.Name = "buttonTest";
+            this.buttonTest.Size = new System.Drawing.Size(114, 23);
+            this.buttonTest.TabIndex = 20;
+            this.buttonTest.Text = "Test configuration";
+            this.buttonTest.UseVisualStyleBackColor = true;
+            this.buttonTest.Click += new System.EventHandler(this.buttonTest_Click);
             // 
             // SetupDialogForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(607, 224);
+            this.ClientSize = new System.Drawing.Size(607, 270);
+            this.Controls.Add(this.buttonTest);
             this.Controls.Add(this.labelTracePath);
             this.Controls.Add(this.textBoxIPPort);
             this.Controls.Add(this.label5);
@@ -323,5 +335,6 @@ namespace ASCOM.VantagePro
         private System.Windows.Forms.TextBox textBoxIPPort;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label labelTracePath;
+        private System.Windows.Forms.Button buttonTest;
     }
 }

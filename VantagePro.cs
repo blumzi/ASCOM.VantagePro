@@ -13,6 +13,7 @@ using Weather;
 using Newtonsoft.Json;
 using System.Net;
 using System.Net.Sockets;
+using System.Drawing;
 
 
 namespace ASCOM.VantagePro
@@ -20,6 +21,9 @@ namespace ASCOM.VantagePro
     public class VantagePro: WeatherStation
     {
         public enum OpMode { None, File, Serial, IP };
+        public Color colorGood = Color.Green;
+        public Color colorWarning = Color.Yellow;
+        public Color colorError = Color.IndianRed;
 
         public const int serialPortSpeed = 19200;
         System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort();
@@ -1106,6 +1110,344 @@ namespace ASCOM.VantagePro
             public string Vendor;
             public string Model;
             public Dictionary<string, string> SensorData;
+        }
+
+        public void TestFileSettings(string path, ref string status, ref Color statusColor)
+        {
+            #region trace
+            string traceId = "TestFileSettings";
+            string settings = $"[{path}]";
+            #endregion
+
+            if (string.IsNullOrEmpty(path))
+            {
+                #region trace
+                tl.LogMessage(traceId, "Empty report file name");
+                #endregion
+                statusColor = colorError;
+                status = "Empty report file name!";
+                return;
+            }
+
+            if (!File.Exists(path))
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: File does not exist");
+                #endregion
+                status = $"File \"{path}\" does not exist.";
+                statusColor = colorError;
+                return;
+            }
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: File exists");
+            #endregion
+
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+
+            for (int tries = 5; tries != 0; tries--)
+            {
+                try
+                {
+                    using (StreamReader sr = new StreamReader(path))
+                    {
+                        string[] words;
+                        string line;
+
+                        if (sr == null) {
+                            continue;
+                        }
+
+                        while ((line = sr.ReadLine()) != null)
+                        {
+                            words = line.Split('=');
+                            if (words.Length != 3)
+                                continue;
+                            dict[words[0]] = words[1];
+                        }
+                    }
+                }
+                catch
+                {
+                    Thread.Sleep(500);  // WeatherLink is writing the file
+                }
+            }
+
+            if (dict.Keys.Count == 0)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Failed to parse file contents");
+                #endregion
+                status = $"Cannot get weather data from \"{path}\".";
+                statusColor = colorError;
+                return;
+            }
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Parsed {dict.Keys.Count} keys");
+            #endregion
+
+            if (string.IsNullOrWhiteSpace(dict["insideHumidity"]) && string.IsNullOrWhiteSpace(dict["outsideHumidity"]))
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: File parsed, but no entries for insideHumidity or outsideHumidity");
+                #endregion
+                status = $"\"{path}\" does not contain a valid report";
+                statusColor = colorError;
+                return;
+            }
+
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Success, the file contains a valid weather report (insideHumidity: {dict["insideHumidity"]}, outsideHumidity: {dict["outsideHumidity"]})");
+            #endregion
+            status = $"\"{path}\" contains a valid report.";
+            statusColor = colorGood;
+        }
+
+        public void TestSerialSettings(string portName, ref string status, ref Color statusColor)
+        {
+            #region trace
+            string traceId = "TestSerialSettings";
+            string settings = $"[{portName}:{serialPortSpeed}]";
+            #endregion
+
+            if (string.IsNullOrWhiteSpace(portName))
+            {
+                #region trace
+                tl.LogMessage(traceId, "Empty comm port name");
+                #endregion
+                status = "Empty serial port name";
+                statusColor = colorError;
+                return;
+            }
+
+            System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort
+            {
+                PortName = portName,
+                BaudRate = serialPortSpeed,
+                ReadTimeout = 1000,
+                ReadBufferSize = 100
+            };
+
+            try
+            {
+                serialPort.Open();
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Open() succeeded");
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Open() caught {ex.Message} at {ex.StackTrace}");
+                #endregion
+                status = $"Cannot open serial port \"{portName}:{serialPortSpeed}\" ";
+                statusColor = colorError;
+                return;
+            }
+
+            int[] rxBytesWakeup = new int[2];
+            int attempt, maxAttempts = 3;
+            for (attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                try
+                {
+                    serialPort.Write("\r");
+                    if ((rxBytesWakeup[0] = serialPort.ReadByte()) == '\n' && (rxBytesWakeup[1] = serialPort.ReadByte()) == '\r')
+                    {
+                        #region trace
+                        tl.LogMessage(traceId, $"{settings}: Wakeup sequence succeeded");
+                        #endregion
+                        break;
+                    }
+                } catch
+                {
+                    continue;
+                }
+                Thread.Sleep(1000);
+            }
+
+            if (attempt >= maxAttempts)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Wakeup sequence failed after {attempt + 1} attempts");
+                #endregion
+                status = $"Cannot wake up station on port \"{portName}\"";
+                statusColor = colorError;
+                return;
+            }
+
+            string txString = "LOOP 1\n";
+            serialPort.Write(txString);
+
+            if (serialPort.ReadByte() != ACK)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Did not get an ACK in response to \"{txString}\"");
+                #endregion
+                status = $"Cannot wakeup station (no ACK) on serial port \"{portName}:{serialPortSpeed}\".";
+                statusColor = colorError;
+                return;
+            }
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Wakeup succeeded");
+            #endregion
+
+            Thread.Sleep(500);
+            int nRxBytes;
+            byte[] rxBytesLoop = new byte[99];
+            if ((nRxBytes = serialPort.Read(rxBytesLoop, 0, rxBytesLoop.Length)) != rxBytesLoop.Length)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Could not read {rxBytesLoop.Length} bytes (got only {nRxBytes}) as reply to \"{txString}\".");
+                #endregion
+                status = $"Could not read {rxBytesLoop.Length} bytes (got only {nRxBytes})\n  from serial port {portName}:{serialPortSpeed}.";
+                statusColor = colorError;
+                return;
+            }
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Received {nRxBytes} as reply to \"{txString}\".");
+            #endregion
+
+            if (!CalculateCRC(rxBytesLoop))
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Bad CRC on the data read from serial port as reply to \"{txString}\".");
+                #endregion
+                status = $"Bad CRC on the data read from serial port \"{portName}:{serialPortSpeed}\"";
+                statusColor = colorError;
+                return;
+            }
+
+            serialPort.Close();
+
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Success, received valid reply to \"{txString}\".");
+            #endregion
+            status = $"Succeeded talking with the station on serial port \"{portName}:{serialPortSpeed}\".";
+            statusColor = colorGood;
+        }
+
+        public void TestIPSettings(string address, ref string status, ref Color statusColor)
+        {
+            #region trace
+            string traceId = "TestIPSettings";
+            string settings = $"[{address}:{IPPort}]";
+            #endregion
+
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                #region trace
+                tl.LogMessage(traceId, "Empty IP address");
+                #endregion
+                status = "Empty IP address";
+                statusColor = colorError;
+                return;
+            }
+
+            Socket sock;
+            try
+            {
+                const int timeoutMillis = 5000;
+
+                System.Net.IPAddress.TryParse(address, out IPAddress addr);
+                IPEndPoint ipe = new IPEndPoint(addr, IPPort);
+                sock = new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                IAsyncResult result = sock.BeginConnect(ipe, null, null);
+                bool success = result.AsyncWaitHandle.WaitOne(timeoutMillis, true);
+                if (sock.Connected)
+                {
+                    sock.EndConnect(result);
+                    #region trace
+                    tl.LogMessage(traceId, $"{settings}: Connected");
+                    #endregion
+                }
+                else
+                {
+                    #region trace
+                    tl.LogMessage(traceId, $"{settings}: Connect() failed after {timeoutMillis} millis");
+                    #endregion
+                    sock.Close();
+                    status = $"Cannot connect IP address \"{address}:{IPPort}\"";
+                    statusColor = colorError;
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Connect() caught {ex.Message} at {ex.StackTrace}");
+                #endregion
+                status = $"Cannot connect IP address \"{address}:{IPPort}\"";
+                statusColor = colorError;
+                return;
+            }
+
+            Byte[] rxBytesWakeup = new byte[2];
+            int nRxBytes = 0, attempt, maxAttempts = 3;
+
+            for (attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                sock.Send(Encoding.ASCII.GetBytes("\r"), 1, 0);
+                nRxBytes = sock.Receive(rxBytesWakeup, rxBytesWakeup.Length, 0);
+                if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytesWakeup, 0, nRxBytes) == "\n\r")
+                {
+                    #region trace
+                    tl.LogMessage(traceId, $"{settings}: Wakeup sequence succeeded.");
+                    #endregion
+                    break;
+                }
+                Thread.Sleep(1000);
+            }
+
+            if (attempt >= maxAttempts)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Wakeup sequence failed after {attempt + 1} attempts, (received {nRxBytes})");
+                #endregion
+                sock.Close();
+                status = $"Wakeup failed for IP address \"{address}:{IPPort}\"";
+                statusColor = colorError;
+                return;
+            }
+
+            string LOOP = "LOOP 1\n";
+            Byte[] txBytes = Encoding.ASCII.GetBytes(LOOP);
+            IPsocket.Send(txBytes, txBytes.Length, 0);
+
+            Byte[] rxBytesLoop = new byte[99];
+            if ((nRxBytes = IPsocket.Receive(rxBytesLoop, rxBytesLoop.Length, 0)) != rxBytesLoop.Length)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Failed to receive {rxBytesLoop.Length} bytes, received only {nRxBytes} bytes");
+                #endregion
+                sock.Close();
+                status = $"Wakeup failed for IP address \"{address}:{IPPort}\"";
+                statusColor = colorError;
+                return;
+            }
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Received {rxBytesLoop.Length} bytes from {IPAddress}:{IPPort} in reply to \"{txBytes}\"");
+            #endregion
+
+            if (!CalculateCRC(rxBytesLoop))
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Bad CRC");
+                #endregion
+                sock.Close();
+                status = $"{settings}: Bad CRC.";
+                statusColor = colorError;
+                return;
+            }
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Good CRC");
+            #endregion
+
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Success");
+            #endregion
+            sock.Close();
+            status = $"Success for IP address \"{address}:{IPPort}\"";
+            statusColor = colorGood;
         }
     }
 }
