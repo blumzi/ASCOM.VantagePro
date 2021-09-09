@@ -110,7 +110,7 @@ namespace ASCOM.VantagePro
             }
         }
 
-        private static readonly Dictionary<byte, string> ValueToStationModel = new Dictionary<byte, string>
+        public static readonly Dictionary<byte, string> ValueToStationModel = new Dictionary<byte, string>
         {
             {  0, "Wizard III" },
             {  1, "Wizard II" },
@@ -1112,7 +1112,7 @@ namespace ASCOM.VantagePro
             public Dictionary<string, string> SensorData;
         }
 
-        public void TestFileSettings(string path, ref string status, ref Color statusColor)
+        public void TestFileSettings(string path, ref string result, ref Color color)
         {
             #region trace
             string traceId = "TestFileSettings";
@@ -1122,11 +1122,11 @@ namespace ASCOM.VantagePro
             if (string.IsNullOrEmpty(path))
             {
                 #region trace
-                tl.LogMessage(traceId, "Empty report file name");
+                tl.LogMessage(traceId, $"{settings}: Empty report file name");
                 #endregion
-                statusColor = colorError;
-                status = "Empty report file name!";
-                return;
+                color = colorError;
+                result = "Empty report file name!";
+                goto Out;
             }
 
             if (!File.Exists(path))
@@ -1134,9 +1134,9 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, $"{settings}: File does not exist");
                 #endregion
-                status = $"File \"{path}\" does not exist.";
-                statusColor = colorError;
-                return;
+                result = $"File \"{path}\" does not exist.";
+                color = colorError;
+                goto Out;
             }
             #region trace
             tl.LogMessage(traceId, $"{settings}: File exists");
@@ -1177,9 +1177,9 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, $"{settings}: Failed to parse file contents");
                 #endregion
-                status = $"Cannot get weather data from \"{path}\".";
-                statusColor = colorError;
-                return;
+                result = $"Cannot get weather data from \"{path}\".";
+                color = colorError;
+                goto Out;
             }
             #region trace
             tl.LogMessage(traceId, $"{settings}: Parsed {dict.Keys.Count} keys");
@@ -1190,19 +1190,26 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, $"{settings}: File parsed, but no entries for insideHumidity or outsideHumidity");
                 #endregion
-                status = $"\"{path}\" does not contain a valid report";
-                statusColor = colorError;
-                return;
+                result = $"\"{path}\" does not contain a valid report";
+                color = colorError;
+                goto Out;
             }
 
+            result = $"\"{path}\" contains a valid report";
+            string stationName = dict["StationName"];
+            if (!string.IsNullOrWhiteSpace(stationName))
+                result += $" for station \"{stationName}\".";
+            else
+                stationName = "NullOrWhiteSpace";
             #region trace
-            tl.LogMessage(traceId, $"{settings}: Success, the file contains a valid weather report (insideHumidity: {dict["insideHumidity"]}, outsideHumidity: {dict["outsideHumidity"]})");
+            tl.LogMessage(traceId, $"{settings}: Success, the file contains a valid weather report (stationName: {stationName}, insideHumidity: {dict["insideHumidity"]}, outsideHumidity: {dict["outsideHumidity"]})");
             #endregion
-            status = $"\"{path}\" contains a valid report.";
-            statusColor = colorGood;
+            color = colorGood;
+        Out:
+            ;
         }
 
-        public void TestSerialSettings(string portName, ref string status, ref Color statusColor)
+        public void TestSerialSettings(string portName, ref string result, ref Color color)
         {
             #region trace
             string traceId = "TestSerialSettings";
@@ -1214,8 +1221,8 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, "Empty comm port name");
                 #endregion
-                status = "Empty serial port name";
-                statusColor = colorError;
+                result = "Empty serial port name";
+                color = colorError;
                 return;
             }
 
@@ -1227,6 +1234,7 @@ namespace ASCOM.VantagePro
                 ReadBufferSize = 100
             };
 
+            #region Open
             try
             {
                 serialPort.Open();
@@ -1239,11 +1247,13 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, $"{settings}: Open() caught {ex.Message} at {ex.StackTrace}");
                 #endregion
-                status = $"Cannot open serial port \"{portName}:{serialPortSpeed}\" ";
-                statusColor = colorError;
-                return;
+                result = $"Cannot open serial port \"{portName}:{serialPortSpeed}\" ";
+                color = colorError;
+                goto Out;
             }
+            #endregion
 
+            #region Wakeup
             int[] rxBytesWakeup = new int[2];
             int attempt, maxAttempts = 3;
             for (attempt = 0; attempt < maxAttempts; attempt++)
@@ -1270,63 +1280,56 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, $"{settings}: Wakeup sequence failed after {attempt + 1} attempts");
                 #endregion
-                status = $"Cannot wake up station on port \"{portName}\"";
-                statusColor = colorError;
-                return;
+                result = $"Cannot wake up station on port \"{portName}\"";
+                color = colorError;
+                goto Out;
             }
-
-            string txString = "LOOP 1\n";
-            serialPort.Write(txString);
-
-            if (serialPort.ReadByte() != ACK)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Did not get an ACK in response to \"{txString}\"");
-                #endregion
-                status = $"Cannot wakeup station (no ACK) on serial port \"{portName}:{serialPortSpeed}\".";
-                statusColor = colorError;
-                return;
-            }
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Wakeup succeeded");
             #endregion
 
-            Thread.Sleep(500);
+            #region Identify
+            char[] txBytes = { 'W', 'R', 'D', (char)0x12, (char)0x4d, '\n' };
+            byte[] rxBytes = new byte[2];
             int nRxBytes;
-            byte[] rxBytesLoop = new byte[99];
-            if ((nRxBytes = serialPort.Read(rxBytesLoop, 0, rxBytesLoop.Length)) != rxBytesLoop.Length)
+            serialPort.Write(txBytes, 0, txBytes.Length);
+            Thread.Sleep(500);
+            if ((nRxBytes = serialPort.Read(rxBytes, 0, rxBytes.Length)) != rxBytes.Length)
             {
                 #region trace
-                tl.LogMessage(traceId, $"{settings}: Could not read {rxBytesLoop.Length} bytes (got only {nRxBytes}) as reply to \"{txString}\".");
+                tl.LogMessage(traceId, $"{settings}: Identify: got only {nRxBytes} bytes (instead of 2)");
                 #endregion
-                status = $"Could not read {rxBytesLoop.Length} bytes (got only {nRxBytes})\n  from serial port {portName}:{serialPortSpeed}.";
-                statusColor = colorError;
-                return;
+                result = $"Cannot identify station";
+                color = colorError;
+                goto Out;
             }
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Received {nRxBytes} as reply to \"{txString}\".");
+
+            if (rxBytes[0] != ACK)
+            {
+                #region trace
+                tl.LogMessage(traceId, $"{settings}: Identify: first byte is 0x{rxBytes[0]:X} instead of ACK");
+                #endregion
+                result = $"Cannot identify station";
+                color = colorError;
+                goto Out;
+            }
+
+            string stationType = "Unknown";
+            try
+            {
+                stationType = ValueToStationModel[rxBytes[1]];
+            }
+            catch { }
             #endregion
 
-            if (!CalculateCRC(rxBytesLoop))
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Bad CRC on the data read from serial port as reply to \"{txString}\".");
-                #endregion
-                status = $"Bad CRC on the data read from serial port \"{portName}:{serialPortSpeed}\"";
-                statusColor = colorError;
-                return;
-            }
-
+            #region trace
+            tl.LogMessage(traceId, $"{settings}: Found a \"{stationType}\" type station.");
+            #endregion
+            result = $"Found a \"{stationType}\" type station at {settings}.";
+            color = colorGood;
+        Out:
             serialPort.Close();
-
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Success, received valid reply to \"{txString}\".");
-            #endregion
-            status = $"Succeeded talking with the station on serial port \"{portName}:{serialPortSpeed}\".";
-            statusColor = colorGood;
         }
 
-        public void TestIPSettings(string address, ref string status, ref Color statusColor)
+        public void TestIPSettings(string address, ref string result, ref Color color)
         {
             #region trace
             string traceId = "TestIPSettings";
@@ -1338,12 +1341,13 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, "Empty IP address");
                 #endregion
-                status = "Empty IP address";
-                statusColor = colorError;
+                result = "Empty IP address";
+                color = colorError;
                 return;
             }
 
-            Socket sock;
+            Socket sock = null;
+            #region Open
             try
             {
                 const int timeoutMillis = 5000;
@@ -1351,11 +1355,11 @@ namespace ASCOM.VantagePro
                 System.Net.IPAddress.TryParse(address, out IPAddress addr);
                 IPEndPoint ipe = new IPEndPoint(addr, IPPort);
                 sock = new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                IAsyncResult result = sock.BeginConnect(ipe, null, null);
-                bool success = result.AsyncWaitHandle.WaitOne(timeoutMillis, true);
+                IAsyncResult asyncResult = sock.BeginConnect(ipe, null, null);
+                bool success = asyncResult.AsyncWaitHandle.WaitOne(timeoutMillis, true);
                 if (sock.Connected)
                 {
-                    sock.EndConnect(result);
+                    sock.EndConnect(asyncResult);
                     #region trace
                     tl.LogMessage(traceId, $"{settings}: Connected");
                     #endregion
@@ -1365,10 +1369,9 @@ namespace ASCOM.VantagePro
                     #region trace
                     tl.LogMessage(traceId, $"{settings}: Connect() failed after {timeoutMillis} millis");
                     #endregion
-                    sock.Close();
-                    status = $"Cannot connect IP address \"{address}:{IPPort}\"";
-                    statusColor = colorError;
-                    return;
+                    result = $"Cannot connect IP address \"{address}:{IPPort}\"";
+                    color = colorError;
+                    goto Out;
                 }
             }
             catch (Exception ex)
@@ -1376,19 +1379,21 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, $"{settings}: Connect() caught {ex.Message} at {ex.StackTrace}");
                 #endregion
-                status = $"Cannot connect IP address \"{address}:{IPPort}\"";
-                statusColor = colorError;
-                return;
+                result = $"Cannot connect IP address \"{address}:{IPPort}\"";
+                color = colorError;
+                goto Out;
             }
+            #endregion
 
-            Byte[] rxBytesWakeup = new byte[2];
+            #region Wakeup
+            Byte[] rxBytes = new byte[2];
             int nRxBytes = 0, attempt, maxAttempts = 3;
 
             for (attempt = 0; attempt < maxAttempts; attempt++)
             {
                 sock.Send(Encoding.ASCII.GetBytes("\r"), 1, 0);
-                nRxBytes = sock.Receive(rxBytesWakeup, rxBytesWakeup.Length, 0);
-                if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytesWakeup, 0, nRxBytes) == "\n\r")
+                nRxBytes = sock.Receive(rxBytes, rxBytes.Length, 0);
+                if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytes, 0, nRxBytes) == "\n\r")
                 {
                     #region trace
                     tl.LogMessage(traceId, $"{settings}: Wakeup sequence succeeded.");
@@ -1403,51 +1408,52 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(traceId, $"{settings}: Wakeup sequence failed after {attempt + 1} attempts, (received {nRxBytes})");
                 #endregion
-                sock.Close();
-                status = $"Wakeup failed for IP address \"{address}:{IPPort}\"";
-                statusColor = colorError;
-                return;
+                result = $"Wakeup failed for IP address \"{address}:{IPPort}\"";
+                color = colorError;
+                goto Out;
             }
+            #endregion
 
-            string LOOP = "LOOP 1\n";
-            Byte[] txBytes = Encoding.ASCII.GetBytes(LOOP);
-            IPsocket.Send(txBytes, txBytes.Length, 0);
+            #region Identify
+            char[] txBytes = { 'W', 'R', 'D', (char)0x12, (char)0x4d, '\n' };
+            rxBytes = new byte[2];
+            IPsocket.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
 
-            Byte[] rxBytesLoop = new byte[99];
-            if ((nRxBytes = IPsocket.Receive(rxBytesLoop, rxBytesLoop.Length, 0)) != rxBytesLoop.Length)
+            if ((nRxBytes = IPsocket.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
             {
                 #region trace
-                tl.LogMessage(traceId, $"{settings}: Failed to receive {rxBytesLoop.Length} bytes, received only {nRxBytes} bytes");
+                tl.LogMessage(traceId, $"{settings}: Identify: got only {nRxBytes} bytes (instead of 2)");
                 #endregion
-                sock.Close();
-                status = $"Wakeup failed for IP address \"{address}:{IPPort}\"";
-                statusColor = colorError;
-                return;
+                result = $"Cannot identify station";
+                color = colorError;
+                goto Out;
             }
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Received {rxBytesLoop.Length} bytes from {IPAddress}:{IPPort} in reply to \"{txBytes}\"");
-            #endregion
 
-            if (!CalculateCRC(rxBytesLoop))
+            if (rxBytes[0] != ACK)
             {
                 #region trace
-                tl.LogMessage(traceId, $"{settings}: Bad CRC");
+                tl.LogMessage(traceId, $"{settings}: Identify: first byte is 0x{rxBytes[0]:X} instead of ACK");
                 #endregion
-                sock.Close();
-                status = $"{settings}: Bad CRC.";
-                statusColor = colorError;
-                return;
+                result = $"Cannot identify station";
+                color = colorError;
+                goto Out;
             }
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Good CRC");
+
+            string stationType = "Unknown";
+            try
+            {
+                stationType = ValueToStationModel[rxBytes[1]];
+            }
+            catch { }
             #endregion
 
             #region trace
-            tl.LogMessage(traceId, $"{settings}: Success");
+            tl.LogMessage(traceId, $"{settings}: Found a \"{stationType}\" type station.");
             #endregion
+            result = $"Found a \"{stationType}\" type station at {settings}.";
+            color = colorGood;
+        Out:
             sock.Close();
-            status = $"Success for IP address \"{address}:{IPPort}\"";
-            statusColor = colorGood;
         }
     }
 }
