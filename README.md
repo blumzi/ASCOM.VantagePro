@@ -1,21 +1,39 @@
 ﻿# ASCOM *VantagePro2* driver
-The _VantagePro2_ weather station is usually serviced by the vendor-supplied _WeatherLink_ software, no **ASCOM** driver is supplied.
 
-This **ASCOM** *ObservingConditions* driver bridges this gap.
+This is an **ASCOM** *ObservingConditions* driver for weather stations.
+
+It evolved from being dedicated to the _VantagePro2_ (by **Davis Systems Inc.**) stations to handling home made stations produced by amateurs.
+
+The _VantagePro2_ weather station is usually serviced by the vendor-supplied _WeatherLink_ software, no **ASCOM** driver is supplied.
+This driver bridges the gap.
 
 
 ## Operational modes
 The driver accesses the station's data in one of three operational modes, selectable via the driver's _Setup_ window
 
-- ### *WeatherLink* report
+- ### Report File
+The driver periodically parses an ASCII report file (the path is specified in the _Setup_ window) and looks for the following lines:
 
-The driver capitalizes on _WeatherLink_'s capability to produce a periodic report.  The report is parsed and the 
-data is presented in an **ASCOM** _ObservingConditions_ compliant manner.  This allows the user to continue 
-enjoying _WeatherLink_'s capabilities while gaining **ASCOM** compatibility.
+>**outsideTemp**=25.5=<br>
+>**outsideHumidity**=59=<br>
+>**barometer**=1006.5=<br>
+>**windSpeed**=38.6=<br>
+>**windDir**=328=<br>
+>**rainRate**=0.0=<br>
+>**outsideDewPt**=16.9=<br>
+>**utcTime**= 4:03p=<br>
+>**utcDate**=06/23/19=<br>
+>**StationName**=My Very Own Station=<br>
 
-The *WeatherLink* software is set-up to periodically (minimal interval is 1 minute) prepare an *HTML* report-file, using a template supplied by this driver's installation (VantagePro.htx) , thus  exposing the weather station's internal data elements.
+NOTES:
+- The **bold** words are keywords, the must appear exactly as presented here
+- The **=** (equals) characters separate the keywords from the values and also end the values.  Exactly two **=** characters are expected per each line.
+- The driver first tries to parse the values using the local "***Culture***" and, if it fails, it tries to parse with "***en-US***".
+- If any keywords are missing, getting the values of the respective _ObservingConditions_ properties will produce **NotImplemented** exceptions
 
-The driver periodically parses the report-file (a valid path must be provided at _Setup_ time) and presents it as an **ASCOM** *ObservingConditions* object.
+
+  ### Special case - WeatheLink Report File
+The _WeatherLink_ software can be set-up to produce a periodic _HTML_ report (the minimal interval is 1 minute) using a specified template (the driver provides one, named ***VantagePro.htx***, which just dumps all the station's internal data).  This operational mode allows the user to continue enjoying _WeatherLink_'s capabilities while gaining **ASCOM** compatibility.
 
 - ### Serial-port
 The driver will directly connect the station and get the relevant data (the serial-port, e.g. _**COM1**_, is supplied at _Setup_ time).
