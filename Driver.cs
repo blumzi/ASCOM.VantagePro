@@ -234,7 +234,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string name = VantagePro.Name;
+                string name = Name;
 
                 tl.LogMessage("Name Get", name);
                 return name;

@@ -8,8 +8,8 @@ namespace Weather
 {
     public abstract class WeatherStation
     {
-        public enum WeatherStationVendor { DavisInstruments, Boltwood, Stars4All };
-        public enum WeatherStationModel { VantagePro2, CloudSensorII, TessW };
+        public enum WeatherStationVendor { Unknown, DavisInstruments, Boltwood, Stars4All };
+        public enum WeatherStationModel { Unknown, VantagePro2, CloudSensorII, TessW };
         public enum WeatherStationInputMethod
         {
             ClarityII,
@@ -20,7 +20,7 @@ namespace Weather
         };
 
         public int _unitId;
-        public string _name;
+        public abstract string Name { get; }
 
         public abstract WeatherStationVendor Vendor
         {

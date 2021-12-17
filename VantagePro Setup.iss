@@ -5,6 +5,8 @@
 [Setup]
 
 #define VantageProDll "bin\Release\ASCOM.VantagePro.ObservingConditions.dll"
+#define NewtonSoftJsonDll "bin\Release\NewtonSoft.Json.dll"
+#define NewtonSoftJsonXml "bin\Release\NewtonSoft.Json.xml"
 #define asmbVersion GetStringFileInfo(VantageProDll,"FileVersion")
 
 AppID={{43b538d0-0d73-47a0-9552-f60f9898e943}}
@@ -29,7 +31,7 @@ WizardImageFile="C:\Program Files (x86)\ASCOM\Platform 6 Developer Components\In
 LicenseFile="Resources\LICENSE.GPL3"
 ; {cf}\ASCOM\Uninstall\ObservingConditions folder created by Platform, always
 UninstallFilesDir="{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
-;MissingRunOnceIdsWarning=no
+MissingRunOnceIdsWarning=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -40,6 +42,8 @@ Name: "{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
 
 [Files]
 Source: {#VantageProDll}; DestDir: "{app}"
+Source: {#NewtonSoftJsonDll}; DestDir: "{app}"
+Source: {#NewtonSoftJsonXml}; DestDir: "{app}"
 ; Require a read-me HTML to appear after installation, maybe driver's Help doc
 Source: "README.md"; DestDir: "{app}"; Flags: isreadme
 ; TODO: Add other files needed by your driver here (add subfolders above)
@@ -50,6 +54,8 @@ Source: "Files\VantagePro.htx"; DestDir: "{app}"
 ; Only for .NET assembly/in-proc drivers
 Filename: "{dotnet4032}\regasm.exe"; Parameters: "/codebase ""{app}\ASCOM.VantagePro.ObservingConditions.dll"""; Flags: runhidden 32bit
 Filename: "{dotnet4064}\regasm.exe"; Parameters: "/codebase ""{app}\ASCOM.VantagePro.ObservingConditions.dll"""; Flags: runhidden 64bit; Check: IsWin64
+Filename: "{dotnet4032}\regasm.exe"; Parameters: "/codebase ""{app}\Newtonsoft.Json.dll"""; Flags: runhidden 32bit
+Filename: "{dotnet4064}\regasm.exe"; Parameters: "/codebase ""{app}\Newtonsoft.Json.dll"""; Flags: runhidden 64bit; Check: IsWin64
 
 ; Only if driver is .NET
 [UninstallRun]

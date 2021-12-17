@@ -48,6 +48,8 @@ namespace ASCOM.VantagePro
         private Dictionary<string, string> sensorData = null;
         private DateTime lastDataRead = DateTime.MinValue;
 
+        private DataSource dataSource;
+
         private static readonly Lazy<VantagePro> lazy = new Lazy<VantagePro>(() => new VantagePro()); // Singleton
 
         public static string DriverDescription
@@ -179,9 +181,17 @@ namespace ASCOM.VantagePro
         public static OpMode OperationalMode { get; set; }
         public bool Tracing { get; set; }
 
-        private readonly List<string> usedKeys = new List<string> {
-                    "outsideHumidity", "outsideDewPt", "outsideTemp", "barometer", "rainRate", "windDir", "windSpeed", "utcDate", "utcTime"
-                };
+        private readonly List<string> keysInUse = new List<string> {
+            "outsideHumidity",
+            "outsideDewPt",
+            "outsideTemp",
+            "barometer",
+            "rainRate",
+            "windDir",
+            "windSpeed",
+            "utcDate",
+            "utcTime"
+        };
 
         public void Refresh_DataFile()
         {
@@ -217,7 +227,7 @@ namespace ASCOM.VantagePro
 
                                 key = words[0].Trim();
                                 value = words[1].Trim();
-                                if (usedKeys.Contains(key))
+                                if (keysInUse.Contains(key))
                                 {
                                     sensorData[key] = value;
                                     #region trace
@@ -530,23 +540,49 @@ namespace ASCOM.VantagePro
             if (_initialized)
                 return;
 
-            _name = "VantagePro";
             sensorData = new Dictionary<string, string>();
             ReadProfile();
 
-            if (Tracing)
-                Directory.CreateDirectory(Path.GetDirectoryName(traceLogFile));
-            tl = new TraceLogger(traceLogFile, "VantagePro")
+            switch (OperationalMode)
             {
-                Enabled = Tracing
-            };
+                case OpMode.File:
+                    dataSource = new DataSource
+                    {
+                        Type = "file",
+                        Details = $"{DataFile}",
+                    };
+                    break;
+
+                case OpMode.Serial:
+                    dataSource = new DataSource
+                    {
+                        Type = "serial",
+                        Details = $"{SerialPortName}:{SerialPortSpeed}",
+                    };
+                    break;
+
+                case OpMode.IP:
+                    dataSource = new DataSource
+                    {
+                        Type = "socket",
+                        Details = $"{IPAddress}:{IPPort}",
+                    };
+                    break;
+            }
+
+            if (Tracing)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(traceLogFile));
+                tl = new TraceLogger(traceLogFile, "VantagePro")
+                {
+                    Enabled = true
+                };
+            }
 
             Refresh();
 
             _initialized = true;
         }
-
-        private static string StationType { get; set; }
 
         public bool Connected
         {
@@ -637,21 +673,17 @@ namespace ASCOM.VantagePro
             {
                 VantagePro2StationRawData raw = new VantagePro2StationRawData()
                 {
-                    Name = _name,
-                    Vendor = Vendor.ToString(),
-                    Model = Model,
+                    Station = new StationData
+                    {
+                        Name = Name,
+                        Vendor = Vendor.ToString(),
+                        Model = Model,
+                        DataSource = dataSource,
+                    },
                     SensorData = sensorData,
                 };
 
                 return JsonConvert.SerializeObject(raw);
-            }
-        }
-
-        public static string Name
-        {
-            get
-            {
-                return Instance._name;
             }
         }
         
@@ -1135,6 +1167,15 @@ namespace ASCOM.VantagePro
             set { }
         }
 
+        public override string Name {
+            get
+            {
+                if (sensorData.Keys.Contains("StationName") && !string.IsNullOrEmpty(sensorData["StationName"]))
+                    return sensorData["StationName"];
+                return "Unknown";
+            }
+        }
+
         private static readonly Dictionary<OpMode, WeatherStationInputMethod> opMode2InputMethod = new Dictionary<OpMode, WeatherStationInputMethod>()
         {
             { OpMode.File, WeatherStationInputMethod.WeatherLink_HtmlReport },
@@ -1156,6 +1197,8 @@ namespace ASCOM.VantagePro
         {
             get
             {
+                if (OperationalMode == OpMode.File)
+                    return WeatherStationVendor.Unknown;
                 return WeatherStationVendor.DavisInstruments;
             }
         }
@@ -1164,7 +1207,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return StationType;
+                return GetStationType();
             }
         }
 
@@ -1216,11 +1259,24 @@ namespace ASCOM.VantagePro
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0xed1, 0x1ef0,
         };
 
-        public class VantagePro2StationRawData
+
+        public class DataSource
+        {
+            public string Type;
+            public string Details;
+        };
+
+        public class StationData
         {
             public string Name;
             public string Vendor;
             public string Model;
+            public DataSource DataSource;
+        };
+
+        public class VantagePro2StationRawData
+        {
+            public StationData Station;
             public Dictionary<string, string> SensorData;
         }
 
