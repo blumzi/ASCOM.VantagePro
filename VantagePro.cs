@@ -179,6 +179,10 @@ namespace ASCOM.VantagePro
         public static OpMode OperationalMode { get; set; }
         public bool Tracing { get; set; }
 
+        private readonly List<string> usedKeys = new List<string> {
+                    "outsideHumidity", "outsideDewPt", "outsideTemp", "barometer", "rainRate", "windDir", "windSpeed", "utcDate", "utcTime"
+                };
+
         public void Refresh_DataFile()
         {
             if (string.IsNullOrEmpty(DataFile))
@@ -191,8 +195,7 @@ namespace ASCOM.VantagePro
 
             if (lastDataRead == DateTime.MinValue || File.GetLastWriteTime(DataFile).CompareTo(lastDataRead) > 0)
             {
-                if (sensorData == null)
-                    sensorData = new Dictionary<string, string>();
+                sensorData = new Dictionary<string, string>();
 
                 for (int tries = 5; tries != 0; tries--)
                 {
@@ -201,7 +204,7 @@ namespace ASCOM.VantagePro
                         using (StreamReader sr = new StreamReader(DataFile))
                         {
                             string[] words;
-                            string line;
+                            string line, key, value;
 
                             if (sr == null)
                                 throw new InvalidValueException($"Refresh: cannot open \"{DataFile}\" for read.");
@@ -211,7 +214,16 @@ namespace ASCOM.VantagePro
                                 words = line.Split('=');
                                 if (words.Length != 3)
                                     continue;
-                                sensorData[words[0]] = words[1];
+
+                                key = words[0].Trim();
+                                value = words[1].Trim();
+                                if (usedKeys.Contains(key))
+                                {
+                                    sensorData[key] = value;
+                                    #region trace
+                                    tl.LogMessage("Refresh_DataFile", $"Datafile: sensorData[{key}] = \"{sensorData[key]}\"");
+                                    #endregion
+                                }
                             }
 
                             lastDataRead = DateTime.Now;
@@ -559,21 +571,24 @@ namespace ASCOM.VantagePro
                             serialPort.Close();
                         _connected = serialPort.IsOpen;
                         #region trace
-                        tl.LogMessage("Connected", $"serial port: {SerialPortName}, connected: {_connected}");
+                        if (_connected)
+                            tl.LogMessage("Connected", $"serial port: {SerialPortName}");
                         #endregion
                         break;
 
                     case OpMode.File:
                         _connected = value && !string.IsNullOrEmpty(DataFile) && File.Exists(DataFile);
                         #region trace
-                        tl.LogMessage("Connected", $"Datafile: {DataFile}, connected: {_connected}");
+                        if (_connected)
+                            tl.LogMessage("Connected", $"Datafile: {DataFile}");
                         #endregion
                         break;
 
                     case OpMode.IP:
                         _connected = value ? Open_Socket() : Close_Socket();
                         #region trace
-                        tl.LogMessage("Connected", $"Socket: {IPAddress}:{IPPort}, connected: {_connected}");
+                        if (_connected)
+                            tl.LogMessage("Connected", $"Socket: {IPAddress}:{IPPort}");
                         #endregion
                         break;
                 }
@@ -767,10 +782,42 @@ namespace ASCOM.VantagePro
             get
             {
                 Refresh();
-                var dewPoint = Convert.ToDouble(sensorData["outsideDewPt"]);
+                #region trace
+                string traceId = "DewPoint";
+                if (string.IsNullOrEmpty(sensorData["outsideDewPt"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"outsideDewPt\"]");
+                    return double.NaN;
+                }
 
-                return dewPoint;
+                #endregion
+
+                return TryParseDouble_LocalThenEnUS(sensorData["outsideDewPt"]);
             }
+        }
+
+        private static readonly CultureInfo en_US = CultureInfo.CreateSpecificCulture("en-US");
+
+        public double TryParseDouble_LocalThenEnUS(string str)
+        {
+            if (Double.TryParse(str, out double value))
+                return value;
+
+            if (Double.TryParse(str, NumberStyles.Float, en_US, out value))
+                return value;
+
+            return Double.NaN;
+        }
+
+        public static DateTime TryParseDateTime_LocalThenEnUS(string str)
+        {
+            if (DateTime.TryParse(str, out DateTime d))
+                return d;
+
+            if (DateTime.TryParse(str, en_US, DateTimeStyles.None, out d))
+                return d;
+
+            return DateTime.MinValue;
         }
 
         /// <summary>
@@ -785,9 +832,16 @@ namespace ASCOM.VantagePro
             get
             {
                 Refresh();
-                var humidity = Convert.ToDouble(sensorData["outsideHumidity"]);
+                #region trace
+                string traceId = "Humidity";
+                if (string.IsNullOrEmpty(sensorData["outsideHumidity"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"outsideHumidity\"]");
+                    return double.NaN;
+                }
+                #endregion
 
-                return humidity;
+                return TryParseDouble_LocalThenEnUS(sensorData["outsideHumidity"]);
             }
         }
 
@@ -803,10 +857,18 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                Refresh();
-                var pressure = Convert.ToDouble(sensorData["barometer"]);
+                string traceId = "Pressure";
 
-                return pressure;
+                Refresh();
+                #region trace
+                if (string.IsNullOrEmpty(sensorData["barometer"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"Pressure\"]");
+                    return double.NaN;
+                }
+                #endregion
+
+                return TryParseDouble_LocalThenEnUS(sensorData["barometer"]);
             }
         }
 
@@ -821,10 +883,18 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                Refresh();
-                var rainRate = Convert.ToDouble(sensorData["rainRate"]);
+                string traceId = "RainRate";
 
-                return rainRate;
+                Refresh();
+                #region trace
+                if (string.IsNullOrEmpty(sensorData["rainRate"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"rainRate\"]");
+                    return double.NaN;
+                }
+                #endregion
+
+                return TryParseDouble_LocalThenEnUS(sensorData["rainRate"]);
             }
         }
         
@@ -917,10 +987,18 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                Refresh();
-                var temperature = Convert.ToDouble(sensorData["outsideTemp"]);
+                string traceId = "Temperature";
 
-                return temperature;
+                Refresh();
+                #region trace
+                if (string.IsNullOrEmpty(sensorData["outsideTemp"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"outsideTemp\"]");
+                    return double.NaN;
+                }
+                #endregion
+
+                return Double.TryParse(sensorData["outsideTemp"], out double temperature) ? temperature : Double.NaN;
             }
         }
 
@@ -951,8 +1029,24 @@ namespace ASCOM.VantagePro
             double seconds;
             if (OperationalMode == OpMode.File)
             {
+                #region trace
+                string traceId = $"TimeSinceLastUpdate({PropertyName})";
+
+                if (string.IsNullOrEmpty(sensorData["utcDate"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"utcDate\"]");
+                    return TimeSpan.MaxValue.TotalSeconds;
+                }
+
+                if (string.IsNullOrEmpty(sensorData["utcTime"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"utcTime\"]");
+                    return TimeSpan.MaxValue.TotalSeconds;
+                }
+                #endregion
                 string dateTime = sensorData["utcDate"] + " " + sensorData["utcTime"] + "m";
-                DateTime lastUpdate = Convert.ToDateTime(dateTime);
+                var lastUpdate = TryParseDateTime_LocalThenEnUS(dateTime);
+
                 seconds = (DateTime.UtcNow - lastUpdate).TotalSeconds;
             }
             else
@@ -975,7 +1069,19 @@ namespace ASCOM.VantagePro
             get
             {
                 Refresh();
-                return WindSpeedMps == 0.0 ? 0.0 : Convert.ToDouble(sensorData["windDir"]);
+                #region trace
+                string traceId = "WindDirection";
+                if (string.IsNullOrEmpty(sensorData["windDir"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"windDir\"]");
+                    return double.NaN;
+                }
+                #endregion
+
+                if (WindSpeedMps == 0.0)
+                    return 0.0;
+
+                return TryParseDouble_LocalThenEnUS(sensorData["windDir"]);
             }
         }
 
@@ -1007,11 +1113,17 @@ namespace ASCOM.VantagePro
         {
             get
             {
+                string traceId = "WindSpeedMps";
                 Refresh();
-                double kmh = Convert.ToSingle(sensorData["windSpeed"]);
-                double windSpeed = MPS(kmh);
+                #region trace
+                if (string.IsNullOrEmpty(sensorData["windSpeed"]))
+                {
+                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"windSpeed\"]");
+                    return double.NaN;
+                }
+                #endregion
 
-                return windSpeed;
+                return TryParseDouble_LocalThenEnUS(sensorData["windSpeed"]);
             }
         }
 
