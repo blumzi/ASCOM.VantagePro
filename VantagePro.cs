@@ -48,7 +48,7 @@ namespace ASCOM.VantagePro
         private Dictionary<string, string> sensorData = null;
         private DateTime lastDataRead = DateTime.MinValue;
 
-        private DataSource dataSource;
+        private DataSource dataSource { get; set; }
 
         private static readonly Lazy<VantagePro> lazy = new Lazy<VantagePro>(() => new VantagePro()); // Singleton
 
@@ -227,13 +227,13 @@ namespace ASCOM.VantagePro
 
                                 key = words[0].Trim();
                                 value = words[1].Trim();
-                                if (keysInUse.Contains(key))
-                                {
+                                //if (keysInUse.Contains(key))
+                                //{
                                     sensorData[key] = value;
                                     #region trace
                                     tl.LogMessage("Refresh_DataFile", $"Datafile: sensorData[{key}] = \"{sensorData[key]}\"");
                                     #endregion
-                                }
+                                //}
                             }
 
                             lastDataRead = DateTime.Now;
@@ -546,24 +546,21 @@ namespace ASCOM.VantagePro
             switch (OperationalMode)
             {
                 case OpMode.File:
-                    dataSource = new DataSource
-                    {
+                    dataSource = new DataSource {
                         Type = "file",
                         Details = $"{DataFile}",
                     };
                     break;
 
                 case OpMode.Serial:
-                    dataSource = new DataSource
-                    {
+                    dataSource = new DataSource {
                         Type = "serial",
                         Details = $"{SerialPortName}:{SerialPortSpeed}",
                     };
                     break;
 
                 case OpMode.IP:
-                    dataSource = new DataSource
-                    {
+                    dataSource = new DataSource {
                         Type = "socket",
                         Details = $"{IPAddress}:{IPPort}",
                     };
@@ -693,17 +690,16 @@ namespace ASCOM.VantagePro
             {
                 string info = $"station model: {Instance.GetStationType()}, ";
 
-
                 switch (VantagePro.OperationalMode)
                 {
                     case OpMode.File:
-                        info += $"file interface ({VantagePro.DataFile})";
+                        info += $"file ({VantagePro.DataFile})";
                         break;
                     case OpMode.Serial:
-                        info += $"serial interface ({VantagePro.SerialPortName} at {VantagePro.serialPortSpeed} baud)";
+                        info += $"serial ({VantagePro.SerialPortName} at {VantagePro.serialPortSpeed} baud)";
                         break;
                     case OpMode.IP:
-                        info += $"socket interface ({VantagePro.IPAddress}:{VantagePro.IPPort})";
+                        info += $"socket ({VantagePro.IPAddress}:{VantagePro.IPPort})";
                         break;
                 }
 
@@ -814,17 +810,18 @@ namespace ASCOM.VantagePro
             get
             {
                 Refresh();
-                #region trace
-                string traceId = "DewPoint";
-                if (string.IsNullOrEmpty(sensorData["outsideDewPt"]))
+
+                string property = "DewPoint", key = "outsideDewPt";
+
+                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
                 {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"outsideDewPt\"]");
-                    return double.NaN;
+                    #region trace
+                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
+                    #endregion
+                    throw new PropertyNotImplementedException(property, false);
                 }
 
-                #endregion
-
-                return TryParseDouble_LocalThenEnUS(sensorData["outsideDewPt"]);
+                return TryParseDouble_LocalThenEnUS(sensorData[key]);
             }
         }
 
@@ -863,17 +860,18 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                Refresh();
-                #region trace
-                string traceId = "Humidity";
-                if (string.IsNullOrEmpty(sensorData["outsideHumidity"]))
-                {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"outsideHumidity\"]");
-                    return double.NaN;
-                }
-                #endregion
+                string property = "Humidity", key = "outsideHumidity";
 
-                return TryParseDouble_LocalThenEnUS(sensorData["outsideHumidity"]);
+                Refresh();
+                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData["outsideHumidity"]))
+                {
+                    #region trace
+                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
+                    #endregion
+                    throw new PropertyNotImplementedException(property, false);
+                }
+
+                return TryParseDouble_LocalThenEnUS(sensorData[key]);
             }
         }
 
@@ -889,18 +887,18 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string traceId = "Pressure";
+                string property = "Pressure", key = "barometer";
 
                 Refresh();
-                #region trace
-                if (string.IsNullOrEmpty(sensorData["barometer"]))
+                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
                 {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"Pressure\"]");
-                    return double.NaN;
+                    #region trace
+                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{property}\"]");
+                    #endregion
+                    throw new PropertyNotImplementedException(property, false);
                 }
-                #endregion
 
-                return TryParseDouble_LocalThenEnUS(sensorData["barometer"]);
+                return TryParseDouble_LocalThenEnUS(sensorData[key]);
             }
         }
 
@@ -915,18 +913,18 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string traceId = "RainRate";
+                string property = "RainRate", key = "rainRate";
 
                 Refresh();
-                #region trace
-                if (string.IsNullOrEmpty(sensorData["rainRate"]))
+                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
                 {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"rainRate\"]");
-                    return double.NaN;
+                    #region trace
+                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
+                    #endregion
+                    throw new PropertyNotImplementedException(property, false);
                 }
-                #endregion
 
-                return TryParseDouble_LocalThenEnUS(sensorData["rainRate"]);
+                return TryParseDouble_LocalThenEnUS(sensorData[key]);
             }
         }
         
@@ -1019,18 +1017,18 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string traceId = "Temperature";
+                string property = "Temperature", key = "outsideTemp";
 
                 Refresh();
-                #region trace
-                if (string.IsNullOrEmpty(sensorData["outsideTemp"]))
+                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
                 {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"outsideTemp\"]");
-                    return double.NaN;
+                    #region trace
+                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
+                    #endregion
+                    throw new PropertyNotImplementedException(property, false);
                 }
-                #endregion
 
-                return Double.TryParse(sensorData["outsideTemp"], out double temperature) ? temperature : Double.NaN;
+                return TryParseDouble_LocalThenEnUS(sensorData[key]);
             }
         }
 
@@ -1062,21 +1060,26 @@ namespace ASCOM.VantagePro
             if (OperationalMode == OpMode.File)
             {
                 #region trace
-                string traceId = $"TimeSinceLastUpdate({PropertyName})";
-
-                if (string.IsNullOrEmpty(sensorData["utcDate"]))
-                {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"utcDate\"]");
-                    return TimeSpan.MaxValue.TotalSeconds;
-                }
-
-                if (string.IsNullOrEmpty(sensorData["utcTime"]))
-                {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"utcTime\"]");
-                    return TimeSpan.MaxValue.TotalSeconds;
-                }
+                string method = $"TimeSinceLastUpdate({PropertyName})";
                 #endregion
-                string dateTime = sensorData["utcDate"] + " " + sensorData["utcTime"] + "m";
+                string keyDate = "utcDate", keyTime = "utcTime";
+
+                if (!sensorData.ContainsKey(keyDate) || string.IsNullOrEmpty(sensorData[keyDate]))
+                {
+                    #region trace
+                    tl.LogMessage(method, $"NullOrEmpty: sensorData[\"{keyDate}\"]");
+                    #endregion
+                    throw new MethodNotImplementedException(method);
+                }
+
+                if (!sensorData.ContainsKey(keyTime) || string.IsNullOrEmpty(sensorData[keyTime]))
+                {
+                    #region trace
+                    tl.LogMessage(method, $"NullOrEmpty: sensorData[\"{keyTime}\"]");
+                    #endregion
+                    throw new MethodNotImplementedException(method);
+                }
+                string dateTime = sensorData[keyDate] + " " + sensorData[keyTime] + "m";
                 var lastUpdate = TryParseDateTime_LocalThenEnUS(dateTime);
 
                 seconds = (DateTime.UtcNow - lastUpdate).TotalSeconds;
@@ -1100,20 +1103,21 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                Refresh();
-                #region trace
-                string traceId = "WindDirection";
-                if (string.IsNullOrEmpty(sensorData["windDir"]))
-                {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"windDir\"]");
-                    return double.NaN;
-                }
-                #endregion
+                string property = "WindDirection", key = "windDir";
 
+                Refresh();
                 if (WindSpeedMps == 0.0)
                     return 0.0;
 
-                return TryParseDouble_LocalThenEnUS(sensorData["windDir"]);
+                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
+                {
+                    #region trace
+                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
+                    #endregion
+                    throw new PropertyNotImplementedException(property, false);
+                }
+
+                return TryParseDouble_LocalThenEnUS(sensorData[key]);
             }
         }
 
@@ -1145,17 +1149,18 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string traceId = "WindSpeedMps";
-                Refresh();
-                #region trace
-                if (string.IsNullOrEmpty(sensorData["windSpeed"]))
-                {
-                    tl.LogMessage(traceId, "NullOrEmpty: sensorData[\"windSpeed\"]");
-                    return double.NaN;
-                }
-                #endregion
+                string property = "WindSpeedMps", key = "windSpeed";
 
-                return TryParseDouble_LocalThenEnUS(sensorData["windSpeed"]);
+                Refresh();
+                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData["windSpeed"]))
+                {
+                    #region trace
+                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
+                    #endregion
+                    throw new PropertyNotImplementedException(property, false);
+                }
+
+                return TryParseDouble_LocalThenEnUS(sensorData[key]);
             }
         }
 
