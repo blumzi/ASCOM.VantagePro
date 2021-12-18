@@ -33,7 +33,10 @@ namespace ASCOM.VantagePro
         private bool _connected = false;
         private bool _initialized = false;
 
-        public static readonly string traceLogFile = $"{Environment.GetFolderPath(Environment.SpecialFolder.Desktop)}\\VantagePro-{DriverVersion}.log";
+        private static readonly int pid = System.Diagnostics.Process.GetCurrentProcess().Id;
+        private static readonly int tid = Thread.CurrentThread.ManagedThreadId;
+        private static readonly string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        public static readonly string traceLogFile = $"{desktop}\\VantagePro-{DriverVersion}-{pid}.{tid}.log";
         public static TraceLogger tl;
 
         private static readonly Util util = new Util();
@@ -174,7 +177,7 @@ namespace ASCOM.VantagePro
             }
             catch
             {
-                return $"Unknown (byte[1]: {rxBytes[1]})";
+                return $"GetStationType: Unknown (byte[1]: {rxBytes[1]})";
             }
         }
 
@@ -227,13 +230,11 @@ namespace ASCOM.VantagePro
 
                                 key = words[0].Trim();
                                 value = words[1].Trim();
-                                //if (keysInUse.Contains(key))
-                                //{
-                                    sensorData[key] = value;
-                                    #region trace
-                                    tl.LogMessage("Refresh_DataFile", $"Datafile: sensorData[{key}] = \"{sensorData[key]}\"");
-                                    #endregion
-                                //}
+                                sensorData[key] = value;
+                                #region trace
+                                if (keysInUse.Contains(key))
+                                    tl.LogMessage("Refresh_DataFile", $"sensorData[{key}] = \"{sensorData[key]}\"");
+                                #endregion
                             }
 
                             lastDataRead = DateTime.Now;
@@ -569,11 +570,15 @@ namespace ASCOM.VantagePro
 
             if (Tracing)
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(traceLogFile));
-                tl = new TraceLogger(traceLogFile, "VantagePro")
+                try
                 {
-                    Enabled = true
-                };
+                    Directory.CreateDirectory(Path.GetDirectoryName(traceLogFile));
+                    tl = new TraceLogger(traceLogFile, "VantagePro")
+                    {
+                        Enabled = true
+                    };
+                }
+                catch { }
             }
 
             Refresh();
