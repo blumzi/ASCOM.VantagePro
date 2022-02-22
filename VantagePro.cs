@@ -28,7 +28,7 @@ namespace ASCOM.VantagePro
         public const int serialPortSpeed = 19200;
         System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort();
 
-        public Socket IPsocket;
+        //public Socket IPsocket;
 
         private bool _connected = false;
         private bool _initialized = false;
@@ -134,6 +134,7 @@ namespace ASCOM.VantagePro
             byte[] rxBytes = new byte[2];
             int nRxBytes = 0;
             string op = "GetStationType";
+            Socket socket = null;
 
             switch (OperationalMode)
             {
@@ -146,9 +147,10 @@ namespace ASCOM.VantagePro
                     break;
 
                 case OpMode.IP:
-                    Wakeup_Socket();
-                    IPsocket.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
-                    nRxBytes = IPsocket.Receive(rxBytes, rxBytes.Length, 0);
+                    socket = Open_Socket();
+                    Wakeup_Socket(socket);
+                    socket.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
+                    nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0);
                     break;
 
                 case OpMode.File:
@@ -160,7 +162,7 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(op, $"Got only {nRxBytes} bytes (instead of 2)");
                 #endregion
-                return null;
+                goto BailOut;
             }
 
             if (rxBytes[0] != ACK)
@@ -168,7 +170,7 @@ namespace ASCOM.VantagePro
                 #region trace
                 tl.LogMessage(op, $"First byte is 0x{rxBytes[0]:X} instead of ACK");
                 #endregion
-                return null;
+                goto BailOut;
             }
 
             try
@@ -179,6 +181,11 @@ namespace ASCOM.VantagePro
             {
                 return $"GetStationType: Unknown (byte[1]: {rxBytes[1]})";
             }
+
+        BailOut:
+            if (socket != null)
+                Close_Socket(socket);
+            return null;
         }
 
         public static OpMode OperationalMode { get; set; }
@@ -268,24 +275,23 @@ namespace ASCOM.VantagePro
             }
         }
 
-        private bool Open_Socket()
+        private Socket Open_Socket()
         {
             string op = "Open_Socket";
-            IPsocket = null;
+            Socket socket;
 
             try
             {
                 System.Net.IPAddress.TryParse(IPAddress, out IPAddress addr);
                 IPEndPoint ipe = new IPEndPoint(addr, IPPort);
-                Socket tempSocket =
+                socket =
                     new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                tempSocket.Connect(ipe);
+                socket.Connect(ipe);
 
-                if (tempSocket.Connected)
+                if (socket.Connected)
                 {
-                    IPsocket = tempSocket;
                     tl.LogMessage(op, $"Connected to {IPAddress}:{IPPort}");
-                    return true;
+                    return socket;
                 }
             }
             catch (Exception ex) {
@@ -293,20 +299,20 @@ namespace ASCOM.VantagePro
                 throw;
             }
 
-            return false;
+            return null;
         }
 
         /// <summary>
         /// Disconnects and closes the IPsocket
         /// </summary>
         /// <returns>is IPsocket still connected</returns>
-        private bool Close_Socket()
+        private bool Close_Socket(Socket socket)
         {
             try
             {
-                IPsocket.Disconnect(true);
+                socket.Disconnect(true);
                 tl.LogMessage("Close_Socket", $"Disconnected from {IPAddress}:{IPPort}");
-                IPsocket.Close();
+                socket.Close();
                 return true;
             }
             catch { }
@@ -344,22 +350,21 @@ namespace ASCOM.VantagePro
             return false;
         }
 
-        private bool Wakeup_Socket()
+        private bool Wakeup_Socket(Socket socket)
         {
-            string op = $"WakeUp_Socket [{IPAddress}:{IPPort}]";
-            Open_Socket();
+            string op = $"WakeUp_Socket";
 
             Byte[] rxBytes = new byte[2];
             int nRxBytes, attempt, maxAttempts = 3;
 
             for (attempt = 0; attempt < maxAttempts; attempt++)
             {
-                IPsocket.Send(Encoding.ASCII.GetBytes("\r"), 1, 0);
-                nRxBytes = IPsocket.Receive(rxBytes, rxBytes.Length, 0);
+                socket.Send(Encoding.ASCII.GetBytes("\r"), 1, 0);
+                nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0);
                 if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytes, 0, nRxBytes) == "\n\r")
                 {
                     #region trace
-                    tl.LogMessage(op, $"attempt: {attempt}, Success");
+                    tl.LogMessage(op, $"[{IPAddress}:{IPPort}] attempt: {attempt}, Success");
                     #endregion
                     return true;
                 }
@@ -438,50 +443,56 @@ namespace ASCOM.VantagePro
 
         private void Refresh_Socket()
         {
-            if (!Wakeup_Socket())
-                return;
+            Socket socket = Open_Socket();
 
-            string op = $"Refresh_Socket [{IPAddress}:{IPPort}]";
+            if (socket == null || !Wakeup_Socket(socket))
+                goto BailOut;
+
+            string op = $"Refresh_Socket";
             string LOOP = "LOOP 1\n";
             Byte[] txBytes = Encoding.ASCII.GetBytes(LOOP);
             Byte[] rxBytes = new byte[99];
 
-            IPsocket.Send(txBytes, txBytes.Length, 0);
-            IPsocket.Receive(rxBytes, 1, 0);
+            socket.Send(txBytes, txBytes.Length, 0);
+            socket.Receive(rxBytes, 1, 0);
             if (rxBytes[0] != ACK)
             {
                 #region trace
-                tl.LogMessage(op, $"Got 0x{rxBytes[0]:X2} instead of 0x{ACK:X2}");
+                tl.LogMessage(op, $"[{IPAddress}:{IPPort}] Got 0x{rxBytes[0]:X2} instead of 0x{ACK:X2}");
                 #endregion
-                return;
+                goto BailOut;
             }
             #region trace
-            tl.LogMessage(op, $"Got ACK (0x{rxBytes[0]:X2})");
+            tl.LogMessage(op, $"[{IPAddress}:{IPPort}] Got ACK (0x{rxBytes[0]:X2})");
             #endregion
 
             int nRxBytes;
-            if ((nRxBytes = IPsocket.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
+            if ((nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
             {
                 #region trace
-                tl.LogMessage(op, $"Failed to receive {rxBytes.Length} bytes from {IPAddress}:{IPPort}, received only {nRxBytes} bytes");
+                tl.LogMessage(op, $"[{IPAddress}:{IPPort}] Failed to receive {rxBytes.Length} bytes from {IPAddress}:{IPPort}, received only {nRxBytes} bytes");
                 #endregion
-                return;
+                goto BailOut;
             }
 
             #region trace
-            tl.LogMessage(op, $"Received {rxBytes.Length} bytes from {IPAddress}:{IPPort}");
+            tl.LogMessage(op, $"[{IPAddress}:{IPPort}] Received {rxBytes.Length} bytes from {IPAddress}:{IPPort}");
             #endregion
 
             if (!CalculateCRC(rxBytes))
             {
                 #region trace
-                tl.LogMessage(op, "Bad CRC, packet discarded");
+                tl.LogMessage(op, "[{IPAddress}:{IPPort}] Bad CRC, packet discarded");
                 #endregion
-                return;
+                goto BailOut;
             }
 
             ParseSensorData(rxBytes);
             lastDataRead = DateTime.Now;
+
+        BailOut:
+            if (socket != null)
+                Close_Socket(socket);
         }
 
         private string ByteArrayToString(byte[] arr)
@@ -623,7 +634,7 @@ namespace ASCOM.VantagePro
                         break;
 
                     case OpMode.IP:
-                        _connected = value ? Open_Socket() : Close_Socket();
+                        _connected = value;
                         #region trace
                         if (_connected)
                             tl.LogMessage("Connected", $"Socket: {IPAddress}:{IPPort}");
@@ -1595,9 +1606,9 @@ namespace ASCOM.VantagePro
             #region Identify
             char[] txBytes = { 'W', 'R', 'D', (char)0x12, (char)0x4d, '\n' };
             rxBytes = new byte[2];
-            IPsocket.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
+            sock.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
 
-            if ((nRxBytes = IPsocket.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
+            if ((nRxBytes = sock.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
             {
                 #region trace
                 tl.LogMessage(traceId, $"{settings}: Identify: got only {nRxBytes} bytes (instead of 2)");
@@ -1631,6 +1642,7 @@ namespace ASCOM.VantagePro
             result = $"Found a \"{stationType}\" type station at {settings}.";
             color = colorGood;
         Out:
+            sock.Disconnect(false);
             sock.Close();
         }
     }
