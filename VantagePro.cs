@@ -28,8 +28,6 @@ namespace ASCOM.VantagePro
         public const int serialPortSpeed = 19200;
         System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort();
 
-        //public Socket IPsocket;
-
         private bool _connected = false;
         private bool _initialized = false;
 
@@ -51,7 +49,7 @@ namespace ASCOM.VantagePro
         private Dictionary<string, string> sensorData = null;
         private DateTime lastDataRead = DateTime.MinValue;
 
-        private DataSource dataSource { get; set; }
+        private DataSourceClass DataSource { get; set; }
 
         private static readonly Lazy<VantagePro> lazy = new Lazy<VantagePro>(() => new VantagePro()); // Singleton
 
@@ -71,12 +69,12 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public static string Profile_OpMode = "OperationMode";
-        public static string Profile_DataFile = "DataFile";
+        public static string Profile_OpMode     = "OperationMode";
+        public static string Profile_DataFile   = "DataFile";
         public static string Profile_SerialPort = "SerialPort";
-        public static string Profile_IPAddress = "IPAddress";
-        public static string Profile_IPPort = "IPPort";
-        public static string Profile_Tracing = "Tracing";
+        public static string Profile_IPAddress  = "IPAddress";
+        public static string Profile_IPPort     = "IPPort";
+        public static string Profile_Tracing    = "Tracing";
 
         public static VantagePro Instance
         {
@@ -151,6 +149,7 @@ namespace ASCOM.VantagePro
                     Wakeup_Socket(socket);
                     socket.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
                     nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0);
+                    Close_Socket(socket);
                     break;
 
                 case OpMode.File:
@@ -183,8 +182,6 @@ namespace ASCOM.VantagePro
             }
 
         BailOut:
-            if (socket != null)
-                Close_Socket(socket);
             return null;
         }
 
@@ -308,11 +305,12 @@ namespace ASCOM.VantagePro
         /// <returns>is IPsocket still connected</returns>
         private bool Close_Socket(Socket socket)
         {
+            string source = $"[{IPAddress}:{IPPort}]";
             try
             {
+                socket.Shutdown(SocketShutdown.Both);
                 socket.Disconnect(true);
-                tl.LogMessage("Close_Socket", $"Disconnected from {IPAddress}:{IPPort}");
-                socket.Close();
+                tl.LogMessage("Close_Socket", $"{source}: " + (socket.Connected ? "still connected" : "disconnected"));
                 return true;
             }
             catch { }
@@ -326,7 +324,9 @@ namespace ASCOM.VantagePro
 
         private bool Wakeup_Serial()
         {
-            string op = $"WakeUp_Serial [{SerialPortName}:{serialPortSpeed}]";
+            string source = $"[{SerialPortName}:{serialPortSpeed}]";
+            string op = "WakeUp_Serial";
+
             Open_Serial();
             int[] rxBytes = new int[2];
 
@@ -337,7 +337,7 @@ namespace ASCOM.VantagePro
                 if ((rxBytes[0] = serialPort.ReadByte()) == '\n' && (rxBytes[1] = serialPort.ReadByte()) == '\r')
                 {
                     #region trace
-                    tl.LogMessage(op, $"attempt: {attempt+1}, Succeeded ([{rxBytes[0]:X2}], [{rxBytes[1]:X2}])");
+                    tl.LogMessage(op, $"{source}: attempt: {attempt+1}, Succeeded ([{rxBytes[0]:X2}], [{rxBytes[1]:X2}])");
                     #endregion
                     return true;
                 }
@@ -345,7 +345,7 @@ namespace ASCOM.VantagePro
             }
 
             #region trace
-            tl.LogMessage(op, $"Failed after {attempt+1} attempts");
+            tl.LogMessage(op, $"{source}: Failed after {attempt+1} attempts");
             #endregion
             return false;
         }
@@ -353,6 +353,7 @@ namespace ASCOM.VantagePro
         private bool Wakeup_Socket(Socket socket)
         {
             string op = $"WakeUp_Socket";
+            string source = "[{IPAddress}:{IPPort}]";
 
             Byte[] rxBytes = new byte[2];
             int nRxBytes, attempt, maxAttempts = 3;
@@ -364,7 +365,7 @@ namespace ASCOM.VantagePro
                 if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytes, 0, nRxBytes) == "\n\r")
                 {
                     #region trace
-                    tl.LogMessage(op, $"[{IPAddress}:{IPPort}] attempt: {attempt}, Success");
+                    tl.LogMessage(op, $"{source}: attempt#: {attempt}, Success");
                     #endregion
                     return true;
                 }
@@ -372,7 +373,7 @@ namespace ASCOM.VantagePro
             }
 
             #region trace
-            tl.LogMessage(op, $"Failed after {attempt+1} attempts");
+            tl.LogMessage(op, $"{source}: Failed after {attempt+1} attempts");
             #endregion
             return false;
         }
@@ -391,7 +392,8 @@ namespace ASCOM.VantagePro
 
         public void Refresh_Serial()
         {
-            string op = $"Refresh_Serial [{SerialPortName}:{serialPortSpeed}]";
+            string op = $"Refresh_Serial";
+            string source = $"[{SerialPortName}:{serialPortSpeed}]";
             string txString = "LOOP 1\n";
 
             if (!Wakeup_Serial())
@@ -400,19 +402,19 @@ namespace ASCOM.VantagePro
             byte[] rxBytes = new byte[99];
             serialPort.Write(txString);
             #region trace
-            tl.LogMessage(op, $"Wrote: {txString} to {SerialPortName}");
+            tl.LogMessage(op, $"{source}: Wrote: {txString} to {SerialPortName}");
             #endregion
 
             int rxByte;
             if ((rxByte = serialPort.ReadByte()) != ACK)
             {
                 #region trace
-                tl.LogMessage(op, $"Got 0x{rxByte:X1} instead of ACK (existing: {serialPort.ReadExisting()})");
+                tl.LogMessage(op, $"{source}: Got 0x{rxByte:X1} instead of ACK (existing: {serialPort.ReadExisting()})");
                 #endregion
                 return;
             }
             #region trace
-            tl.LogMessage(op, $"Got ACK ([{rxByte:X2}])");
+            tl.LogMessage(op, $"{source}: Got ACK ([{rxByte:X2}])");
             #endregion
 
             Thread.Sleep(500);
@@ -420,19 +422,19 @@ namespace ASCOM.VantagePro
             if ((nRxBytes = serialPort.Read(rxBytes, 0, rxBytes.Length)) != rxBytes.Length)
             {
                 #region trace
-                tl.LogMessage(op, $"Got {nRxBytes} bytes instead of {rxBytes.Length}");
+                tl.LogMessage(op, $"{source}: Got {nRxBytes} bytes instead of {rxBytes.Length}");
                 #endregion
                 return;
             }
 
             #region trace
-            tl.LogMessage(op, $"Successfully read {rxBytes.Length} bytes");
+            tl.LogMessage(op, $"{source}: Successfully read {rxBytes.Length} bytes");
             #endregion
 
             if (! CalculateCRC(rxBytes))
             {
                 #region trace
-                tl.LogMessage(op, "Bad CRC, packet discarded");
+                tl.LogMessage(op, $"{source}: Bad CRC, packet discarded");
                 #endregion
                 return;
             }
@@ -444,6 +446,7 @@ namespace ASCOM.VantagePro
         private void Refresh_Socket()
         {
             Socket socket = Open_Socket();
+            string source = $"[{IPAddress}:{IPPort}]";
 
             if (socket == null || !Wakeup_Socket(socket))
                 goto BailOut;
@@ -458,31 +461,31 @@ namespace ASCOM.VantagePro
             if (rxBytes[0] != ACK)
             {
                 #region trace
-                tl.LogMessage(op, $"[{IPAddress}:{IPPort}] Got 0x{rxBytes[0]:X2} instead of 0x{ACK:X2}");
+                tl.LogMessage(op, $"{source}: Got 0x{rxBytes[0]:X2} instead of 0x{ACK:X2}");
                 #endregion
                 goto BailOut;
             }
             #region trace
-            tl.LogMessage(op, $"[{IPAddress}:{IPPort}] Got ACK (0x{rxBytes[0]:X2})");
+            tl.LogMessage(op, $"{source}: Got ACK (0x{rxBytes[0]:X2})");
             #endregion
 
             int nRxBytes;
             if ((nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
             {
                 #region trace
-                tl.LogMessage(op, $"[{IPAddress}:{IPPort}] Failed to receive {rxBytes.Length} bytes from {IPAddress}:{IPPort}, received only {nRxBytes} bytes");
+                tl.LogMessage(op, $"{source}: Failed to receive {rxBytes.Length} bytes from {IPAddress}:{IPPort}, received only {nRxBytes} bytes");
                 #endregion
                 goto BailOut;
             }
 
             #region trace
-            tl.LogMessage(op, $"[{IPAddress}:{IPPort}] Received {rxBytes.Length} bytes from {IPAddress}:{IPPort}");
+            tl.LogMessage(op, $"{source}: Received {rxBytes.Length} bytes from {IPAddress}:{IPPort}");
             #endregion
 
             if (!CalculateCRC(rxBytes))
             {
                 #region trace
-                tl.LogMessage(op, "[{IPAddress}:{IPPort}] Bad CRC, packet discarded");
+                tl.LogMessage(op, $"{source}: Bad CRC, packet discarded");
                 #endregion
                 goto BailOut;
             }
@@ -558,21 +561,21 @@ namespace ASCOM.VantagePro
             switch (OperationalMode)
             {
                 case OpMode.File:
-                    dataSource = new DataSource {
+                    DataSource = new DataSourceClass {
                         Type = "file",
                         Details = $"{DataFile}",
                     };
                     break;
 
                 case OpMode.Serial:
-                    dataSource = new DataSource {
+                    DataSource = new DataSourceClass {
                         Type = "serial",
                         Details = $"{SerialPortName}:{SerialPortSpeed}",
                     };
                     break;
 
                 case OpMode.IP:
-                    dataSource = new DataSource {
+                    DataSource = new DataSourceClass {
                         Type = "socket",
                         Details = $"{IPAddress}:{IPPort}",
                     };
@@ -691,7 +694,7 @@ namespace ASCOM.VantagePro
                         Name = Name,
                         Vendor = Vendor.ToString(),
                         Model = Model,
-                        DataSource = dataSource,
+                        DataSource = DataSource,
                     },
                     SensorData = sensorData,
                 };
@@ -1281,7 +1284,7 @@ namespace ASCOM.VantagePro
         };
 
 
-        public class DataSource
+        public class DataSourceClass
         {
             public string Type;
             public string Details;
@@ -1292,7 +1295,7 @@ namespace ASCOM.VantagePro
             public string Name;
             public string Vendor;
             public string Model;
-            public DataSource DataSource;
+            public DataSourceClass DataSource;
         };
 
         public class VantagePro2StationRawData
@@ -1408,7 +1411,7 @@ namespace ASCOM.VantagePro
             if (string.IsNullOrWhiteSpace(portName))
             {
                 #region trace
-                tl.LogMessage(traceId, "Empty comm port name");
+                tl.LogMessage(traceId, $"{settings}: Empty comm port name");
                 #endregion
                 result = "Empty serial port name";
                 color = colorError;
@@ -1528,7 +1531,7 @@ namespace ASCOM.VantagePro
             if (string.IsNullOrWhiteSpace(address))
             {
                 #region trace
-                tl.LogMessage(traceId, "Empty IP address");
+                tl.LogMessage(traceId, $"{settings}: Empty IP address");
                 #endregion
                 result = "Empty IP address";
                 color = colorError;
