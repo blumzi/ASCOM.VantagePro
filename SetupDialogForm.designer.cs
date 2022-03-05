@@ -28,6 +28,7 @@ namespace ASCOM.VantagePro
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.cmdOK = new System.Windows.Forms.Button();
             this.cmdCancel = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -50,6 +51,10 @@ namespace ASCOM.VantagePro
             this.label5 = new System.Windows.Forms.Label();
             this.labelTracePath = new System.Windows.Forms.Label();
             this.buttonTest = new System.Windows.Forms.Button();
+            this.labelRefreshInterval = new System.Windows.Forms.Label();
+            this.textBoxInterval = new System.Windows.Forms.TextBox();
+            this.label6 = new System.Windows.Forms.Label();
+            this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.groupBoxOpMode.SuspendLayout();
             this.SuspendLayout();
@@ -209,14 +214,18 @@ namespace ASCOM.VantagePro
             // 
             // openFileDialogReportFile
             // 
-            this.openFileDialogReportFile.DefaultExt = "htm";
-            this.openFileDialogReportFile.Title = "WeatherLink report file";
+            this.openFileDialogReportFile.AddExtension = false;
+            this.openFileDialogReportFile.CheckFileExists = false;
+            this.openFileDialogReportFile.CheckPathExists = false;
+            this.openFileDialogReportFile.SupportMultiDottedExtensions = true;
+            this.openFileDialogReportFile.Title = "Report file";
             this.openFileDialogReportFile.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialogReportFile_FileOk);
             // 
             // buttonChooser
             // 
             this.buttonChooser.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.buttonChooser.CausesValidation = false;
+            this.buttonChooser.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.buttonChooser.Location = new System.Drawing.Point(537, 110);
             this.buttonChooser.Name = "buttonChooser";
             this.buttonChooser.Size = new System.Drawing.Size(59, 25);
@@ -267,7 +276,7 @@ namespace ASCOM.VantagePro
             // 
             // buttonTest
             // 
-            this.buttonTest.Location = new System.Drawing.Point(148, 196);
+            this.buttonTest.Location = new System.Drawing.Point(364, 195);
             this.buttonTest.Name = "buttonTest";
             this.buttonTest.Size = new System.Drawing.Size(114, 23);
             this.buttonTest.TabIndex = 20;
@@ -275,11 +284,40 @@ namespace ASCOM.VantagePro
             this.buttonTest.UseVisualStyleBackColor = true;
             this.buttonTest.Click += new System.EventHandler(this.buttonTest_Click);
             // 
+            // labelRefreshInterval
+            // 
+            this.labelRefreshInterval.Location = new System.Drawing.Point(148, 200);
+            this.labelRefreshInterval.Name = "labelRefreshInterval";
+            this.labelRefreshInterval.Size = new System.Drawing.Size(52, 13);
+            this.labelRefreshInterval.TabIndex = 21;
+            this.labelRefreshInterval.Text = "Interval";
+            this.labelRefreshInterval.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // textBoxInterval
+            // 
+            this.textBoxInterval.Location = new System.Drawing.Point(209, 196);
+            this.textBoxInterval.Name = "textBoxInterval";
+            this.textBoxInterval.Size = new System.Drawing.Size(29, 20);
+            this.textBoxInterval.TabIndex = 22;
+            this.toolTip1.SetToolTip(this.textBoxInterval, "Interval (in seconds) between readings\r\nof the station\'s sensors.");
+            // 
+            // label6
+            // 
+            this.label6.AutoSize = true;
+            this.label6.Location = new System.Drawing.Point(242, 200);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(47, 13);
+            this.label6.TabIndex = 23;
+            this.label6.Text = "seconds";
+            // 
             // SetupDialogForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(607, 270);
+            this.Controls.Add(this.label6);
+            this.Controls.Add(this.textBoxInterval);
+            this.Controls.Add(this.labelRefreshInterval);
             this.Controls.Add(this.buttonTest);
             this.Controls.Add(this.labelTracePath);
             this.Controls.Add(this.textBoxIPPort);
@@ -336,5 +374,9 @@ namespace ASCOM.VantagePro
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label labelTracePath;
         private System.Windows.Forms.Button buttonTest;
+        private System.Windows.Forms.Label labelRefreshInterval;
+        private System.Windows.Forms.TextBox textBoxInterval;
+        private System.Windows.Forms.ToolTip toolTip1;
+        private System.Windows.Forms.Label label6;
     }
 }

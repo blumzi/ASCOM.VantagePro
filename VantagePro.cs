@@ -21,35 +21,26 @@ namespace ASCOM.VantagePro
     public class VantagePro: WeatherStation
     {
         public enum OpMode { None, File, Serial, IP };
-        public Color colorGood = Color.Green;
-        public Color colorWarning = Color.Yellow;
-        public Color colorError = Color.IndianRed;
+        public static TimeSpan interval;
+        public static Color colorGood = Color.Green;
+        public static Color colorWarning = Color.Yellow;
+        public static Color colorError = Color.IndianRed;
 
-        public const int serialPortSpeed = 19200;
-        System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort();
-
-        private bool _connected = false;
         private bool _initialized = false;
+        private bool _connected = false;
 
-        private static readonly int pid = System.Diagnostics.Process.GetCurrentProcess().Id;
-        private static readonly int tid = Thread.CurrentThread.ManagedThreadId;
+        private static Fetcher fetcher;
+
         private static readonly string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        public static readonly string traceLogFile = $"{desktop}\\VantagePro-{DriverVersion}-{pid}.{tid}.log";
-        public static TraceLogger tl;
+        public static readonly string traceLogFile = $"{desktop}\\VantagePro-{DriverVersion}.log";
+        public static TraceLogger tl = new TraceLogger(traceLogFile, "VantagePro");
 
-        private static readonly Util util = new Util();
-        private const byte ACK = 0x6;
-
-        private readonly TimeSpan refreshInterval = TimeSpan.FromSeconds(30);
-
-        public VantagePro() { }
+        public VantagePro() {
+        }
 
         static VantagePro() { }
 
-        private Dictionary<string, string> sensorData = null;
-        private DateTime lastDataRead = DateTime.MinValue;
-
-        private DataSourceClass DataSource { get; set; }
+        private static Dictionary<string, string> sensorData = null;
 
         private static readonly Lazy<VantagePro> lazy = new Lazy<VantagePro>(() => new VantagePro()); // Singleton
 
@@ -69,12 +60,9 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public static string Profile_OpMode     = "OperationMode";
-        public static string Profile_DataFile   = "DataFile";
-        public static string Profile_SerialPort = "SerialPort";
-        public static string Profile_IPAddress  = "IPAddress";
-        public static string Profile_IPPort     = "IPPort";
-        public static string Profile_Tracing    = "Tracing";
+        public static string Profile_OpMode   = "OperationMode";
+        public static string Profile_Tracing  = "Tracing";
+        public static string Profile_Interval = "IntervalSeconds";
 
         public static VantagePro Instance
         {
@@ -89,106 +77,35 @@ namespace ASCOM.VantagePro
         }
 
         /// <summary>
-        /// Forces the driver to immediatley query its attached hardware to refresh sensor
-        /// values
+        /// Wait for the fetcher to fetch new readings
         /// </summary>
         public void Refresh()
         {
-            if (DateTime.Now < lastDataRead + refreshInterval)
-                return;
+            DateTime currentLastRead = fetcher.LastRead;
 
-            switch (OperationalMode)
-            {
-                case OpMode.File:
-                    Refresh_DataFile();
-                    break;
-
-                case OpMode.Serial:
-                    Refresh_Serial();
-                    break;
-
-                case OpMode.IP:
-                    Refresh_Socket();
-                    break;
-            }
+            while (fetcher.LastRead == currentLastRead)
+                Thread.Sleep(500);
         }
 
-        public static readonly Dictionary<byte, string> ValueToStationModel = new Dictionary<byte, string>
+        private static string GetStationType()
         {
-            {  0, "Wizard III" },
-            {  1, "Wizard II" },
-            {  2, "Monitor" },
-            {  3, "Perception" },
-            {  4, "GroWeather" },
-            {  5, "Energy Enviromonitor" },
-            {  6, "Health Enviromonitor" },
-            { 16, "Vantage Pro or Vantage Pro 2" },
-            { 17, "Vantage Vue" },
-        };
-
-        private string GetStationType()
-        {
-            char[] txBytes = { 'W', 'R', 'D', (char) 0x12, (char) 0x4d, '\n' };
-            byte[] rxBytes = new byte[2];
-            int nRxBytes = 0;
-            string op = "GetStationType";
-            Socket socket = null;
-
-            switch (OperationalMode)
-            {
-                case OpMode.Serial:
-                    Wakeup_Serial();
-                    serialPort.Write(txBytes, 0, txBytes.Length);
-                    Thread.Sleep(500);
-                    rxBytes = Encoding.ASCII.GetBytes(serialPort.ReadExisting());
-                    nRxBytes = rxBytes.Length;
-                    break;
-
-                case OpMode.IP:
-                    socket = Open_Socket();
-                    Wakeup_Socket(socket);
-                    socket.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
-                    nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0);
-                    Close_Socket(socket);
-                    break;
-
-                case OpMode.File:
-                    return "Unknown";
-            }
-
-            if (nRxBytes < 2)
-            {
-                #region trace
-                tl.LogMessage(op, $"Got only {nRxBytes} bytes (instead of 2)");
-                #endregion
-                goto BailOut;
-            }
-
-            if (rxBytes[0] != ACK)
-            {
-                #region trace
-                tl.LogMessage(op, $"First byte is 0x{rxBytes[0]:X} instead of ACK");
-                #endregion
-                goto BailOut;
-            }
-
-            try
-            {
-                return ValueToStationModel[rxBytes[1]];
-            }
-            catch
-            {
-                return $"GetStationType: Unknown (byte[1]: {rxBytes[1]})";
-            }
-
-        BailOut:
-            return null;
+            return (fetcher == null) ? "Unknown" : fetcher.StationType;
         }
 
         public static OpMode OperationalMode { get; set; }
-        public bool Tracing { get; set; }
+        public bool Tracing {
+            get
+            {
+                return VantagePro.tl.Enabled;
+            }
 
-        private readonly List<string> keysInUse = new List<string> {
+            set
+            {
+                VantagePro.tl.Enabled = value;
+            }
+        }
+
+        public static readonly List<string> keysInUse = new List<string> {
             "outsideHumidity",
             "outsideDewPt",
             "outsideTemp",
@@ -200,402 +117,36 @@ namespace ASCOM.VantagePro
             "utcTime"
         };
 
-        public void Refresh_DataFile()
-        {
-            if (string.IsNullOrEmpty(DataFile))
-            {
-                if (_connected)
-                    throw new InvalidValueException("Null or empty dataFile name");
-                else
-                    return;
-            }
-
-            if (lastDataRead == DateTime.MinValue || File.GetLastWriteTime(DataFile).CompareTo(lastDataRead) > 0)
-            {
-                sensorData = new Dictionary<string, string>();
-
-                for (int tries = 5; tries != 0; tries--)
-                {
-                    try
-                    {
-                        using (StreamReader sr = new StreamReader(DataFile))
-                        {
-                            string[] words;
-                            string line, key, value;
-
-                            if (sr == null)
-                                throw new InvalidValueException($"Refresh: cannot open \"{DataFile}\" for read.");
-
-                            while ((line = sr.ReadLine()) != null)
-                            {
-                                words = line.Split('=');
-                                if (words.Length != 3)
-                                    continue;
-
-                                key = words[0].Trim();
-                                value = words[1].Trim();
-                                sensorData[key] = value;
-                                #region trace
-                                if (keysInUse.Contains(key))
-                                    tl.LogMessage("Refresh_DataFile", $"sensorData[{key}] = \"{sensorData[key]}\"");
-                                #endregion
-                            }
-
-                            lastDataRead = DateTime.Now;
-                        }
-                    } catch
-                    {
-                        Thread.Sleep(500);  // WeatherLink is writing the file
-                    }
-                }
-            }
-        }
-
-        private void Open_Serial()
-        {
-            if (serialPort == null)
-                serialPort = new System.IO.Ports.SerialPort();
-            else if (serialPort.IsOpen)
-                return;
-
-            serialPort.PortName = SerialPortName;
-            serialPort.BaudRate = serialPortSpeed;
-            serialPort.ReadTimeout = 1000;
-            serialPort.ReadBufferSize = 100;
-            try
-            {
-                serialPort.Open();
-            }
-            catch
-            {
-                throw;
-            }
-        }
-
-        private Socket Open_Socket()
-        {
-            string op = "Open_Socket";
-            Socket socket;
-
-            try
-            {
-                System.Net.IPAddress.TryParse(IPAddress, out IPAddress addr);
-                IPEndPoint ipe = new IPEndPoint(addr, IPPort);
-                socket =
-                    new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                socket.Connect(ipe);
-
-                if (socket.Connected)
-                {
-                    tl.LogMessage(op, $"Connected to {IPAddress}:{IPPort}");
-                    return socket;
-                }
-            }
-            catch (Exception ex) {
-                tl.LogMessage(op, $"Caught: {ex.Message} at {ex.StackTrace}");
-                throw;
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Disconnects and closes the IPsocket
-        /// </summary>
-        /// <returns>is IPsocket still connected</returns>
-        private bool Close_Socket(Socket socket)
-        {
-            string source = $"[{IPAddress}:{IPPort}]";
-            try
-            {
-                socket.Shutdown(SocketShutdown.Both);
-                socket.Disconnect(true);
-                tl.LogMessage("Close_Socket", $"{source}: " + (socket.Connected ? "still connected" : "disconnected"));
-                return true;
-            }
-            catch { }
-            return false;
-        }
-
-        public static string SerialPortName { get; set;}
-        public static int SerialPortSpeed { get; } = 19200;
-        public static string IPAddress { get; set; }
-        public static short IPPort { get; set; } = 22222;
-
-        private bool Wakeup_Serial()
-        {
-            string source = $"[{SerialPortName}:{serialPortSpeed}]";
-            string op = "WakeUp_Serial";
-
-            Open_Serial();
-            int[] rxBytes = new int[2];
-
-            int attempt, maxAttempts = 3;
-            for (attempt = 0; attempt < maxAttempts; attempt++)
-            {
-                serialPort.Write("\r");
-                if ((rxBytes[0] = serialPort.ReadByte()) == '\n' && (rxBytes[1] = serialPort.ReadByte()) == '\r')
-                {
-                    #region trace
-                    tl.LogMessage(op, $"{source}: attempt: {attempt+1}, Succeeded ([{rxBytes[0]:X2}], [{rxBytes[1]:X2}])");
-                    #endregion
-                    return true;
-                }
-                Thread.Sleep(1000);
-            }
-
-            #region trace
-            tl.LogMessage(op, $"{source}: Failed after {attempt+1} attempts");
-            #endregion
-            return false;
-        }
-
-        private bool Wakeup_Socket(Socket socket)
-        {
-            string op = $"WakeUp_Socket";
-            string source = "[{IPAddress}:{IPPort}]";
-
-            Byte[] rxBytes = new byte[2];
-            int nRxBytes, attempt, maxAttempts = 3;
-
-            for (attempt = 0; attempt < maxAttempts; attempt++)
-            {
-                socket.Send(Encoding.ASCII.GetBytes("\r"), 1, 0);
-                nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0);
-                if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytes, 0, nRxBytes) == "\n\r")
-                {
-                    #region trace
-                    tl.LogMessage(op, $"{source}: attempt#: {attempt}, Success");
-                    #endregion
-                    return true;
-                }
-                Thread.Sleep(1000);
-            }
-
-            #region trace
-            tl.LogMessage(op, $"{source}: Failed after {attempt+1} attempts");
-            #endregion
-            return false;
-        }
-
-        /// <summary>
-        /// Gets a VantagePro two-bytes entity from the LPS command reply block
-        ///  They are transmitted LSB first - (buf[offset] = LSB, buf[offset+1] = MSB)
-        /// </summary>
-        /// <param name="bytes">The stream of bytes in the reply block</param>
-        /// <param name="o">The starting offset</param>
-        /// <returns></returns>
-        public static ushort GetUshort(byte[] bytes, int o)
-        {
-            return (ushort) ((bytes[o + 1] << 8) | bytes[o]);
-        }
-
-        public void Refresh_Serial()
-        {
-            string op = $"Refresh_Serial";
-            string source = $"[{SerialPortName}:{serialPortSpeed}]";
-            string txString = "LOOP 1\n";
-
-            if (!Wakeup_Serial())
-                return;
-
-            byte[] rxBytes = new byte[99];
-            serialPort.Write(txString);
-            #region trace
-            tl.LogMessage(op, $"{source}: Wrote: {txString} to {SerialPortName}");
-            #endregion
-
-            int rxByte;
-            if ((rxByte = serialPort.ReadByte()) != ACK)
-            {
-                #region trace
-                tl.LogMessage(op, $"{source}: Got 0x{rxByte:X1} instead of ACK (existing: {serialPort.ReadExisting()})");
-                #endregion
-                return;
-            }
-            #region trace
-            tl.LogMessage(op, $"{source}: Got ACK ([{rxByte:X2}])");
-            #endregion
-
-            Thread.Sleep(500);
-            int nRxBytes;
-            if ((nRxBytes = serialPort.Read(rxBytes, 0, rxBytes.Length)) != rxBytes.Length)
-            {
-                #region trace
-                tl.LogMessage(op, $"{source}: Got {nRxBytes} bytes instead of {rxBytes.Length}");
-                #endregion
-                return;
-            }
-
-            #region trace
-            tl.LogMessage(op, $"{source}: Successfully read {rxBytes.Length} bytes");
-            #endregion
-
-            if (! CalculateCRC(rxBytes))
-            {
-                #region trace
-                tl.LogMessage(op, $"{source}: Bad CRC, packet discarded");
-                #endregion
-                return;
-            }
-
-            ParseSensorData(rxBytes);
-            lastDataRead = DateTime.Now;
-        }
-
-        private void Refresh_Socket()
-        {
-            Socket socket = Open_Socket();
-            string source = $"[{IPAddress}:{IPPort}]";
-
-            if (socket == null || !Wakeup_Socket(socket))
-                goto BailOut;
-
-            string op = $"Refresh_Socket";
-            string LOOP = "LOOP 1\n";
-            Byte[] txBytes = Encoding.ASCII.GetBytes(LOOP);
-            Byte[] rxBytes = new byte[99];
-
-            socket.Send(txBytes, txBytes.Length, 0);
-            socket.Receive(rxBytes, 1, 0);
-            if (rxBytes[0] != ACK)
-            {
-                #region trace
-                tl.LogMessage(op, $"{source}: Got 0x{rxBytes[0]:X2} instead of 0x{ACK:X2}");
-                #endregion
-                goto BailOut;
-            }
-            #region trace
-            tl.LogMessage(op, $"{source}: Got ACK (0x{rxBytes[0]:X2})");
-            #endregion
-
-            int nRxBytes;
-            if ((nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
-            {
-                #region trace
-                tl.LogMessage(op, $"{source}: Failed to receive {rxBytes.Length} bytes from {IPAddress}:{IPPort}, received only {nRxBytes} bytes");
-                #endregion
-                goto BailOut;
-            }
-
-            #region trace
-            tl.LogMessage(op, $"{source}: Received {rxBytes.Length} bytes from {IPAddress}:{IPPort}");
-            #endregion
-
-            if (!CalculateCRC(rxBytes))
-            {
-                #region trace
-                tl.LogMessage(op, $"{source}: Bad CRC, packet discarded");
-                #endregion
-                goto BailOut;
-            }
-
-            ParseSensorData(rxBytes);
-            lastDataRead = DateTime.Now;
-
-        BailOut:
-            if (socket != null)
-                Close_Socket(socket);
-        }
-
-        private string ByteArrayToString(byte[] arr)
-        {
-            StringBuilder hex = new StringBuilder(arr.Length * 3);
-
-            foreach (byte b in arr)
-                hex.AppendFormat($"{b:X2} ");
-
-            return hex.ToString();
-        }
-
-        private void ParseSensorData(byte[] buf) {
-            string op = "ParseSensorData";
-
-            #region trace
-            tl.LogMessage(op, ByteArrayToString(buf));
-            #endregion
-
-            if (buf[0] != 'L' || buf[1] != 'O' || buf[2] != 'O' || buf[4] != 0 || buf[95] != '\n' || buf[96] != '\r')
-            {
-                #region trace
-                tl.LogMessage(op, $"Bad header [0]: {buf[0]}, [1]: {buf[1]}, [2]: {buf[2]}, [4]: {buf[4]} and/or trailer [95]: {buf[95]}, [96]: {buf[96]}");
-                #endregion
-                return;
-            }
-            #region trace
-            tl.LogMessage(op, "Header and trailer are valid");
-            #endregion
-
-            sensorData = new Dictionary<string, string>();
-
-            double F = GetUshort(buf, 12) / 10.0;
-            sensorData["outsideTemp"] = util.ConvertUnits(F, Units.degreesFahrenheit, Units.degreesCelsius).ToString();
-            sensorData["windSpeed"] = util.ConvertUnits(buf[14], Units.milesPerHour, Units.metresPerSecond).ToString();
-            sensorData["windDir"] = GetUshort(buf, 16).ToString();
-
-            double RH = buf[33];
-            sensorData["outsideHumidity"] = RH.ToString();
-
-            double P = GetUshort(buf, 7);
-            sensorData["barometer"] = (util.ConvertUnits(P, Units.inHg, Units.hPa) / 1000).ToString();
-
-            double K = util.ConvertUnits(F, Units.degreesFahrenheit, Units.degreesKelvin);
-            double Td = K - ((100 - RH) / 5);
-            sensorData["outsideDewPt"] = util.ConvertUnits(Td, Units.degreesKelvin, Units.degreesCelsius).ToString();
-
-            sensorData["rainRate"] = GetUshort(buf, 41).ToString();
-
-            #region trace
-            tl.LogMessage(op, $"Successfully parsed sensor data (packet CRC: {GetUshort(buf, 97):X2})");
-            #endregion
-        }
-
         public void Init()
         {
             if (_initialized)
                 return;
 
-            sensorData = new Dictionary<string, string>();
             ReadProfile();
-
-            switch (OperationalMode)
-            {
-                case OpMode.File:
-                    DataSource = new DataSourceClass {
-                        Type = "file",
-                        Details = $"{DataFile}",
-                    };
-                    break;
-
-                case OpMode.Serial:
-                    DataSource = new DataSourceClass {
-                        Type = "serial",
-                        Details = $"{SerialPortName}:{SerialPortSpeed}",
-                    };
-                    break;
-
-                case OpMode.IP:
-                    DataSource = new DataSourceClass {
-                        Type = "socket",
-                        Details = $"{IPAddress}:{IPPort}",
-                    };
-                    break;
-            }
 
             if (Tracing)
             {
                 try
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(traceLogFile));
-                    tl = new TraceLogger(traceLogFile, "VantagePro")
-                    {
-                        Enabled = true
-                    };
                 }
                 catch { }
             }
 
-            Refresh();
+            switch (OperationalMode)
+            {
+                case OpMode.File:
+                    fetcher = new FileFetcher();
+                    break;
+
+                case OpMode.Serial:
+                    fetcher = new SerialPortFetcher();
+                    break;
+
+                case OpMode.IP:
+                    fetcher = new SocketFetcher();
+                    break;
+            }
 
             _initialized = true;
         }
@@ -609,41 +160,17 @@ namespace ASCOM.VantagePro
 
             set
             {
-                if (value == _connected)
+                if (!_initialized)
+                    Init();
+
+                if (fetcher == null)
                     return;
 
-                if (OperationalMode == OpMode.None)
-                    _connected = false;
-
-                switch (OperationalMode) {
-                    case OpMode.Serial:
-                        if (value)
-                            Open_Serial();
-                        else
-                            serialPort.Close();
-                        _connected = serialPort.IsOpen;
-                        #region trace
-                        if (_connected)
-                            tl.LogMessage("Connected", $"serial port: {SerialPortName}");
-                        #endregion
-                        break;
-
-                    case OpMode.File:
-                        _connected = value && !string.IsNullOrEmpty(DataFile) && File.Exists(DataFile);
-                        #region trace
-                        if (_connected)
-                            tl.LogMessage("Connected", $"Datafile: {DataFile}");
-                        #endregion
-                        break;
-
-                    case OpMode.IP:
-                        _connected = value;
-                        #region trace
-                        if (_connected)
-                            tl.LogMessage("Connected", $"Socket: {IPAddress}:{IPPort}");
-                        #endregion
-                        break;
-                }
+                if (value)
+                    fetcher.Start();
+                else
+                    fetcher.Stop();
+                _connected = value;
             }
         }
 
@@ -694,7 +221,7 @@ namespace ASCOM.VantagePro
                         Name = Name,
                         Vendor = Vendor.ToString(),
                         Model = Model,
-                        DataSource = DataSource,
+                        DataSource = fetcher.DataSource,
                     },
                     SensorData = sensorData,
                 };
@@ -705,21 +232,18 @@ namespace ASCOM.VantagePro
         
         public static string DriverInfo
         {
-            get
+            get  
             {
-                string info = $"station model: {Instance.GetStationType()}, ";
+                string info;
 
-                switch (VantagePro.OperationalMode)
+                if (OperationalMode == OpMode.None)
                 {
-                    case OpMode.File:
-                        info += $"file ({VantagePro.DataFile})";
-                        break;
-                    case OpMode.Serial:
-                        info += $"serial ({VantagePro.SerialPortName} at {VantagePro.serialPortSpeed} baud)";
-                        break;
-                    case OpMode.IP:
-                        info += $"socket ({VantagePro.IPAddress}:{VantagePro.IPPort})";
-                        break;
+                    info = "Operational mode was not chosen yet";
+                }
+                else
+                {
+                    info = $"station model: {GetStationType()}, ";
+                    info += (fetcher == null) ? "" : fetcher.DataSource.ToString();
                 }
 
                 var v = AssemblyVersion;
@@ -729,7 +253,7 @@ namespace ASCOM.VantagePro
             }
         }
 
-        private static Version AssemblyVersion
+        public static Version AssemblyVersion
         {
             get
             {
@@ -755,11 +279,9 @@ namespace ASCOM.VantagePro
                 Enum.TryParse<OpMode>(driverProfile.GetValue(DriverId, Profile_OpMode, string.Empty, OpMode.None.ToString()), out OpMode mode);
                 OperationalMode = mode;
 
-                DataFile = driverProfile.GetValue(DriverId, Profile_DataFile, string.Empty, "");
-                SerialPortName = driverProfile.GetValue(DriverId, Profile_SerialPort, string.Empty, "");
-                IPAddress = driverProfile.GetValue(DriverId, Profile_IPAddress, string.Empty, "");
-                IPPort = Convert.ToInt16(driverProfile.GetValue(DriverId, Profile_IPPort, string.Empty, "22222"));
-                Tracing = Convert.ToBoolean(driverProfile.GetValue(DriverId, Profile_Tracing, string.Empty, "False")); }
+                Tracing = Convert.ToBoolean(driverProfile.GetValue(DriverId, Profile_Tracing, string.Empty, "False"));
+                interval = TimeSpan.FromSeconds(Convert.ToInt32(driverProfile.GetValue(DriverId, Profile_Interval, string.Empty, "30")));
+            }
         }
 
         /// <summary>
@@ -770,15 +292,11 @@ namespace ASCOM.VantagePro
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
                 driverProfile.WriteValue(DriverId, Profile_OpMode, OperationalMode.ToString());
-                driverProfile.WriteValue(DriverId, Profile_DataFile, DataFile);
-                driverProfile.WriteValue(DriverId, Profile_SerialPort, SerialPortName);
-                driverProfile.WriteValue(DriverId, Profile_IPAddress, IPAddress);
-                driverProfile.WriteValue(DriverId, Profile_IPPort, IPPort.ToString());
                 driverProfile.WriteValue(DriverId, Profile_Tracing, Tracing.ToString());
+                driverProfile.WriteValue(DriverId, Profile_Interval, interval.TotalSeconds.ToString());
+                fetcher.WriteProfile();
             }
         }
-
-        public static string DataFile { get; set; }
 
         #region IObservingConditions Implementation
 
@@ -828,69 +346,15 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                Refresh();
-
-                string property = "DewPoint", key = "outsideDewPt";
-
-                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
-                {
-                    #region trace
-                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
-                    #endregion
-                    throw new PropertyNotImplementedException(property, false);
-                }
-
-                return TryParseDouble_LocalThenEnUS(sensorData[key]);
+                return fetcher.DewPoint;
             }
         }
 
-        private static readonly CultureInfo en_US = CultureInfo.CreateSpecificCulture("en-US");
-
-        public double TryParseDouble_LocalThenEnUS(string str)
-        {
-            if (Double.TryParse(str, out double value))
-                return value;
-
-            if (Double.TryParse(str, NumberStyles.Float, en_US, out value))
-                return value;
-
-            return Double.NaN;
-        }
-
-        public static DateTime TryParseDateTime_LocalThenEnUS(string str)
-        {
-            if (DateTime.TryParse(str, out DateTime d))
-                return d;
-
-            if (DateTime.TryParse(str, en_US, DateTimeStyles.None, out d))
-                return d;
-
-            return DateTime.MinValue;
-        }
-
-        /// <summary>
-        /// Atmospheric relative humidity at the observatory in percent
-        /// </summary>
-        /// <remarks>
-        /// Normally optional but mandatory if <see cref="ASCOM.DeviceInterface.IObservingConditions.DewPoint"/> 
-        /// Is provided
-        /// </remarks>
         public double Humidity
         {
             get
             {
-                string property = "Humidity", key = "outsideHumidity";
-
-                Refresh();
-                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData["outsideHumidity"]))
-                {
-                    #region trace
-                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
-                    #endregion
-                    throw new PropertyNotImplementedException(property, false);
-                }
-
-                return TryParseDouble_LocalThenEnUS(sensorData[key]);
+                return fetcher.Humidity;
             }
         }
 
@@ -906,18 +370,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string property = "Pressure", key = "barometer";
-
-                Refresh();
-                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
-                {
-                    #region trace
-                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{property}\"]");
-                    #endregion
-                    throw new PropertyNotImplementedException(property, false);
-                }
-
-                return TryParseDouble_LocalThenEnUS(sensorData[key]);
+                return fetcher.Pressure;
             }
         }
 
@@ -932,18 +385,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string property = "RainRate", key = "rainRate";
-
-                Refresh();
-                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
-                {
-                    #region trace
-                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
-                    #endregion
-                    throw new PropertyNotImplementedException(property, false);
-                }
-
-                return TryParseDouble_LocalThenEnUS(sensorData[key]);
+                return fetcher.RainRate;
             }
         }
         
@@ -981,7 +423,7 @@ namespace ASCOM.VantagePro
                 case "WindGust":
                     throw new MethodNotImplementedException("SensorDescription(" + PropertyName + ")");
                 default:
-                    throw new ASCOM.InvalidValueException("SensorDescription(" + PropertyName + ")");
+                    throw new InvalidValueException("SensorDescription(" + PropertyName + ")");
             }
         }
 
@@ -1036,18 +478,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string property = "Temperature", key = "outsideTemp";
-
-                Refresh();
-                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
-                {
-                    #region trace
-                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
-                    #endregion
-                    throw new PropertyNotImplementedException(property, false);
-                }
-
-                return TryParseDouble_LocalThenEnUS(sensorData[key]);
+                return fetcher.Temperature;
             }
         }
 
@@ -1071,44 +502,10 @@ namespace ASCOM.VantagePro
                 case "SkyTemperature":
                 case "CloudCover":
                 case "WindGust":
-                    throw new MethodNotImplementedException("SensorDescription(" + PropertyName + ")");
-            }
-            Refresh();
-
-            double seconds;
-            if (OperationalMode == OpMode.File)
-            {
-                #region trace
-                string method = $"TimeSinceLastUpdate({PropertyName})";
-                #endregion
-                string keyDate = "utcDate", keyTime = "utcTime";
-
-                if (!sensorData.ContainsKey(keyDate) || string.IsNullOrEmpty(sensorData[keyDate]))
-                {
-                    #region trace
-                    tl.LogMessage(method, $"NullOrEmpty: sensorData[\"{keyDate}\"]");
-                    #endregion
-                    throw new MethodNotImplementedException(method);
-                }
-
-                if (!sensorData.ContainsKey(keyTime) || string.IsNullOrEmpty(sensorData[keyTime]))
-                {
-                    #region trace
-                    tl.LogMessage(method, $"NullOrEmpty: sensorData[\"{keyTime}\"]");
-                    #endregion
-                    throw new MethodNotImplementedException(method);
-                }
-                string dateTime = sensorData[keyDate] + " " + sensorData[keyTime] + "m";
-                var lastUpdate = TryParseDateTime_LocalThenEnUS(dateTime);
-
-                seconds = (DateTime.UtcNow - lastUpdate).TotalSeconds;
-            }
-            else
-            {
-                seconds = (DateTime.UtcNow - lastDataRead.ToUniversalTime()).TotalSeconds;
+                    throw new MethodNotImplementedException("TimeSinceLastUpdate(" + PropertyName + ")");
             }
 
-            return seconds;
+            return fetcher.TimeSinceLastUpdate(PropertyName);
         }
 
         /// <summary>
@@ -1122,21 +519,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string property = "WindDirection", key = "windDir";
-
-                Refresh();
-                if (WindSpeedMps == 0.0)
-                    return 0.0;
-
-                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
-                {
-                    #region trace
-                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
-                    #endregion
-                    throw new PropertyNotImplementedException(property, false);
-                }
-
-                return TryParseDouble_LocalThenEnUS(sensorData[key]);
+                return fetcher.WindDirection;
             }
         }
 
@@ -1168,28 +551,13 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string property = "WindSpeedMps", key = "windSpeed";
-
-                Refresh();
-                if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData["windSpeed"]))
-                {
-                    #region trace
-                    tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
-                    #endregion
-                    throw new PropertyNotImplementedException(property, false);
-                }
-
-                return TryParseDouble_LocalThenEnUS(sensorData[key]);
+                return fetcher.WindSpeedMps;
             }
         }
 
         #endregion
 
-        public override bool Enabled
-        {
-            get { return true; }
-            set { }
-        }
+        public override bool Enabled { get; } = true;
 
         public override string Name {
             get
@@ -1235,61 +603,16 @@ namespace ASCOM.VantagePro
             }
         }
 
-        private static bool CalculateCRC(byte[] buf)
-        {
-            UInt16 crc = 0;
-
-            for (int i = 0; i < buf.Length; i++)
-                crc = (UInt16)(crc_table[(crc >> 8) ^ buf[i]] ^ (crc << 8));
-
-            #region trace
-            tl.LogMessage("CalculateCRC", $"CRC: {(crc == 0 ? "OK" : "BAD")}");
-            #endregion
-            return crc == 0;
-        }
-
-        private static readonly UInt16[] crc_table = {
-            0x0, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
-            0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
-            0x1231, 0x210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
-            0x9339, 0x8318, 0xb37b, 0xa35a, 0xd3bd, 0xc39c, 0xf3ff, 0xe3de,
-            0x2462, 0x3443, 0x420, 0x1401, 0x64e6, 0x74c7, 0x44a4, 0x5485,
-            0xa56a, 0xb54b, 0x8528, 0x9509, 0xe5ee, 0xf5cf, 0xc5ac, 0xd58d,
-            0x3653, 0x2672, 0x1611, 0x630, 0x76d7, 0x66f6, 0x5695, 0x46b4,
-            0xb75b, 0xa77a, 0x9719, 0x8738, 0xf7df, 0xe7fe, 0xd79d, 0xc7bc,
-            0x48c4, 0x58e5, 0x6886, 0x78a7, 0x840, 0x1861, 0x2802, 0x3823,
-            0xc9cc, 0xd9ed, 0xe98e, 0xf9af, 0x8948, 0x9969, 0xa90a, 0xb92b,
-            0x5af5, 0x4ad4, 0x7ab7, 0x6a96, 0x1a71, 0xa50, 0x3a33, 0x2a12,
-            0xdbfd, 0xcbdc, 0xfbbf, 0xeb9e, 0x9b79, 0x8b58, 0xbb3b, 0xab1a,
-            0x6ca6, 0x7c87, 0x4ce4, 0x5cc5, 0x2c22, 0x3c03, 0xc60, 0x1c41,
-            0xedae, 0xfd8f, 0xcdec, 0xddcd, 0xad2a, 0xbd0b, 0x8d68, 0x9d49,
-            0x7e97, 0x6eb6, 0x5ed5, 0x4ef4, 0x3e13, 0x2e32, 0x1e51, 0xe70,
-            0xff9f, 0xefbe, 0xdfdd, 0xcffc, 0xbf1b, 0xaf3a, 0x9f59, 0x8f78,
-            0x9188, 0x81a9, 0xb1ca, 0xa1eb, 0xd10c, 0xc12d, 0xf14e, 0xe16f,
-            0x1080, 0xa1, 0x30c2, 0x20e3, 0x5004, 0x4025, 0x7046, 0x6067,
-            0x83b9, 0x9398, 0xa3fb, 0xb3da, 0xc33d, 0xd31c, 0xe37f, 0xf35e,
-            0x2b1, 0x1290, 0x22f3, 0x32d2, 0x4235, 0x5214, 0x6277, 0x7256,
-            0xb5ea, 0xa5cb, 0x95a8, 0x8589, 0xf56e, 0xe54f, 0xd52c, 0xc50d,
-            0x34e2, 0x24c3, 0x14a0, 0x481, 0x7466, 0x6447, 0x5424, 0x4405,
-            0xa7db, 0xb7fa, 0x8799, 0x97b8, 0xe75f, 0xf77e, 0xc71d, 0xd73c,
-            0x26d3, 0x36f2, 0x691, 0x16b0, 0x6657, 0x7676, 0x4615, 0x5634,
-            0xd94c, 0xc96d, 0xf90e, 0xe92f, 0x99c8, 0x89e9, 0xb98a, 0xa9ab,
-            0x5844, 0x4865, 0x7806, 0x6827, 0x18c0, 0x8e1, 0x3882, 0x28a3,
-            0xcb7d, 0xdb5c, 0xeb3f, 0xfb1e, 0x8bf9, 0x9bd8, 0xabbb, 0xbb9a,
-            0x4a75, 0x5a54, 0x6a37, 0x7a16, 0xaf1, 0x1ad0, 0x2ab3, 0x3a92,
-            0xfd2e, 0xed0f, 0xdd6c, 0xcd4d, 0xbdaa, 0xad8b, 0x9de8, 0x8dc9,
-            0x7c26, 0x6c07, 0x5c64, 0x4c45, 0x3ca2, 0x2c83, 0x1ce0, 0xcc1,
-            0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8,
-            0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0xed1, 0x1ef0,
-        };
-
-
         public class DataSourceClass
         {
             public string Type;
             public string Details;
-        };
 
+            public override string ToString()
+            {
+                return $"{Type}:{Details}";
+            }
+        }
         public class StationData
         {
             public string Name;
@@ -1302,351 +625,6 @@ namespace ASCOM.VantagePro
         {
             public StationData Station;
             public Dictionary<string, string> SensorData;
-        }
-
-        public void TestFileSettings(string path, ref string result, ref Color color)
-        {
-            #region trace
-            string traceId = "TestFileSettings";
-            string settings = $"[{path}]";
-            #endregion
-
-            if (string.IsNullOrEmpty(path))
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Empty report file name");
-                #endregion
-                color = colorError;
-                result = "Empty report file name!";
-                goto Out;
-            }
-
-            if (!File.Exists(path))
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: File does not exist");
-                #endregion
-                result = $"File \"{path}\" does not exist.";
-                color = colorError;
-                goto Out;
-            }
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: File exists");
-            #endregion
-
-            Dictionary<string, string> dict = new Dictionary<string, string>();
-
-            for (int tries = 5; tries != 0; tries--)
-            {
-                try
-                {
-                    using (StreamReader sr = new StreamReader(path))
-                    {
-                        string[] words;
-                        string line;
-
-                        if (sr == null) {
-                            continue;
-                        }
-
-                        while ((line = sr.ReadLine()) != null)
-                        {
-                            words = line.Split('=');
-                            if (words.Length != 3)
-                                continue;
-                            dict[words[0]] = words[1];
-                        }
-                    }
-                }
-                catch
-                {
-                    Thread.Sleep(500);  // WeatherLink is writing the file
-                }
-            }
-
-            if (dict.Keys.Count == 0)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Failed to parse file contents");
-                #endregion
-                result = $"Cannot get weather data from \"{path}\".";
-                color = colorError;
-                goto Out;
-            }
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Parsed {dict.Keys.Count} keys");
-            #endregion
-
-            if (string.IsNullOrWhiteSpace(dict["insideHumidity"]) && string.IsNullOrWhiteSpace(dict["outsideHumidity"]))
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: File parsed, but no entries for insideHumidity or outsideHumidity");
-                #endregion
-                result = $"\"{path}\" does not contain a valid report";
-                color = colorError;
-                goto Out;
-            }
-
-            result = $"\"{path}\" contains a valid report";
-            string stationName = dict["StationName"];
-            if (!string.IsNullOrWhiteSpace(stationName))
-                result += $" for station \"{stationName}\".";
-            else
-                stationName = "NullOrWhiteSpace";
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Success, the file contains a valid weather report (stationName: {stationName}, insideHumidity: {dict["insideHumidity"]}, outsideHumidity: {dict["outsideHumidity"]})");
-            #endregion
-            color = colorGood;
-        Out:
-            ;
-        }
-
-        public void TestSerialSettings(string portName, ref string result, ref Color color)
-        {
-            #region trace
-            string traceId = "TestSerialSettings";
-            string settings = $"[{portName}:{serialPortSpeed}]";
-            #endregion
-
-            if (string.IsNullOrWhiteSpace(portName))
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Empty comm port name");
-                #endregion
-                result = "Empty serial port name";
-                color = colorError;
-                return;
-            }
-
-            System.IO.Ports.SerialPort serialPort = new System.IO.Ports.SerialPort
-            {
-                PortName = portName,
-                BaudRate = serialPortSpeed,
-                ReadTimeout = 1000,
-                ReadBufferSize = 100
-            };
-
-            #region Open
-            try
-            {
-                serialPort.Open();
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Open() succeeded");
-                #endregion
-            }
-            catch (Exception ex)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Open() caught {ex.Message} at {ex.StackTrace}");
-                #endregion
-                result = $"Cannot open serial port \"{portName}:{serialPortSpeed}\" ";
-                color = colorError;
-                goto Out;
-            }
-            #endregion
-
-            #region Wakeup
-            int[] rxBytesWakeup = new int[2];
-            int attempt, maxAttempts = 3;
-            for (attempt = 0; attempt < maxAttempts; attempt++)
-            {
-                try
-                {
-                    serialPort.Write("\r");
-                    if ((rxBytesWakeup[0] = serialPort.ReadByte()) == '\n' && (rxBytesWakeup[1] = serialPort.ReadByte()) == '\r')
-                    {
-                        #region trace
-                        tl.LogMessage(traceId, $"{settings}: Wakeup sequence succeeded");
-                        #endregion
-                        break;
-                    }
-                } catch
-                {
-                    continue;
-                }
-                Thread.Sleep(1000);
-            }
-
-            if (attempt >= maxAttempts)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Wakeup sequence failed after {attempt + 1} attempts");
-                #endregion
-                result = $"Cannot wake up station on port \"{portName}\"";
-                color = colorError;
-                goto Out;
-            }
-            #endregion
-
-            #region Identify
-            char[] txBytes = { 'W', 'R', 'D', (char)0x12, (char)0x4d, '\n' };
-            byte[] rxBytes = new byte[2];
-            int nRxBytes;
-            serialPort.Write(txBytes, 0, txBytes.Length);
-            Thread.Sleep(500);
-            if ((nRxBytes = serialPort.Read(rxBytes, 0, rxBytes.Length)) != rxBytes.Length)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Identify: got only {nRxBytes} bytes (instead of 2)");
-                #endregion
-                result = $"Cannot identify station";
-                color = colorError;
-                goto Out;
-            }
-
-            if (rxBytes[0] != ACK)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Identify: first byte is 0x{rxBytes[0]:X} instead of ACK");
-                #endregion
-                result = $"Cannot identify station";
-                color = colorError;
-                goto Out;
-            }
-
-            string stationType = "Unknown";
-            try
-            {
-                stationType = ValueToStationModel[rxBytes[1]];
-            }
-            catch { }
-            #endregion
-
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Found a \"{stationType}\" type station.");
-            #endregion
-            result = $"Found a \"{stationType}\" type station at {settings}.";
-            color = colorGood;
-        Out:
-            serialPort.Close();
-        }
-
-        public void TestIPSettings(string address, ref string result, ref Color color)
-        {
-            #region trace
-            string traceId = "TestIPSettings";
-            string settings = $"[{address}:{IPPort}]";
-            #endregion
-
-            if (string.IsNullOrWhiteSpace(address))
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Empty IP address");
-                #endregion
-                result = "Empty IP address";
-                color = colorError;
-                return;
-            }
-
-            Socket sock = null;
-            #region Open
-            try
-            {
-                const int timeoutMillis = 5000;
-
-                System.Net.IPAddress.TryParse(address, out IPAddress addr);
-                IPEndPoint ipe = new IPEndPoint(addr, IPPort);
-                sock = new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                IAsyncResult asyncResult = sock.BeginConnect(ipe, null, null);
-                bool success = asyncResult.AsyncWaitHandle.WaitOne(timeoutMillis, true);
-                if (sock.Connected)
-                {
-                    sock.EndConnect(asyncResult);
-                    #region trace
-                    tl.LogMessage(traceId, $"{settings}: Connected");
-                    #endregion
-                }
-                else
-                {
-                    #region trace
-                    tl.LogMessage(traceId, $"{settings}: Connect() failed after {timeoutMillis} millis");
-                    #endregion
-                    result = $"Cannot connect IP address \"{address}:{IPPort}\"";
-                    color = colorError;
-                    goto Out;
-                }
-            }
-            catch (Exception ex)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Connect() caught {ex.Message} at {ex.StackTrace}");
-                #endregion
-                result = $"Cannot connect IP address \"{address}:{IPPort}\"";
-                color = colorError;
-                goto Out;
-            }
-            #endregion
-
-            #region Wakeup
-            Byte[] rxBytes = new byte[2];
-            int nRxBytes = 0, attempt, maxAttempts = 3;
-
-            for (attempt = 0; attempt < maxAttempts; attempt++)
-            {
-                sock.Send(Encoding.ASCII.GetBytes("\r"), 1, 0);
-                nRxBytes = sock.Receive(rxBytes, rxBytes.Length, 0);
-                if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytes, 0, nRxBytes) == "\n\r")
-                {
-                    #region trace
-                    tl.LogMessage(traceId, $"{settings}: Wakeup sequence succeeded.");
-                    #endregion
-                    break;
-                }
-                Thread.Sleep(1000);
-            }
-
-            if (attempt >= maxAttempts)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Wakeup sequence failed after {attempt + 1} attempts, (received {nRxBytes})");
-                #endregion
-                result = $"Wakeup failed for IP address \"{address}:{IPPort}\"";
-                color = colorError;
-                goto Out;
-            }
-            #endregion
-
-            #region Identify
-            char[] txBytes = { 'W', 'R', 'D', (char)0x12, (char)0x4d, '\n' };
-            rxBytes = new byte[2];
-            sock.Send(Encoding.ASCII.GetBytes(txBytes), txBytes.Length, 0);
-
-            if ((nRxBytes = sock.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Identify: got only {nRxBytes} bytes (instead of 2)");
-                #endregion
-                result = $"Cannot identify station";
-                color = colorError;
-                goto Out;
-            }
-
-            if (rxBytes[0] != ACK)
-            {
-                #region trace
-                tl.LogMessage(traceId, $"{settings}: Identify: first byte is 0x{rxBytes[0]:X} instead of ACK");
-                #endregion
-                result = $"Cannot identify station";
-                color = colorError;
-                goto Out;
-            }
-
-            string stationType = "Unknown";
-            try
-            {
-                stationType = ValueToStationModel[rxBytes[1]];
-            }
-            catch { }
-            #endregion
-
-            #region trace
-            tl.LogMessage(traceId, $"{settings}: Found a \"{stationType}\" type station.");
-            #endregion
-            result = $"Found a \"{stationType}\" type station at {settings}.";
-            color = colorGood;
-        Out:
-            sock.Disconnect(false);
-            sock.Close();
         }
     }
 }

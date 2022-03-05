@@ -14,17 +14,25 @@ namespace ASCOM.VantagePro
 
     public partial class SetupDialogForm : Form
     {
-        private readonly VantagePro vantagePro = VantagePro.Instance;
+        private readonly VantagePro vantagePro;
+        private readonly SerialPortFetcher serialPortFetcher;
+        private readonly SocketFetcher socketFetcher;
+        private readonly FileFetcher fileFetcher;
 
         public SetupDialogForm()
         {
+            vantagePro = new VantagePro();
+            serialPortFetcher = new SerialPortFetcher();
+            socketFetcher = new SocketFetcher();
+            fileFetcher = new FileFetcher();
+
             vantagePro.ReadProfile();
 
             InitializeComponent();
             // Initialise current values of user settings from the ASCOM Profile
             InitUI();
 
-            this.Text = $"VantagePro Setup v{typeof(SetupDialogForm).Assembly.GetName().Version}";
+            this.Text = $"VantagePro Setup v{VantagePro.AssemblyVersion}";
         }
 
         private void cmdOK_Click(object sender, EventArgs e) // OK button event handler
@@ -33,26 +41,26 @@ namespace ASCOM.VantagePro
             {
                 string[] ports = System.IO.Ports.SerialPort.GetPortNames();
                 List<string> portsList = new List<string>(ports);
+                string selectedComPort = (string)comboBoxComPort.SelectedItem;
 
-                if (portsList.Contains((string)comboBoxComPort.SelectedItem))
+                if (portsList.Contains(selectedComPort))
                 {
-                    VantagePro.SerialPortName = (string)comboBoxComPort.SelectedItem;
                     VantagePro.OperationalMode = VantagePro.OpMode.Serial;
+                    serialPortFetcher.ComPort = selectedComPort;
                 }
             }
             else if (radioButtonReportFile.Checked)
             {
                 if (System.IO.File.Exists(textBoxReportFile.Text))
                 {
-                    VantagePro.DataFile = textBoxReportFile.Text;
                     VantagePro.OperationalMode = VantagePro.OpMode.File;
+                    fileFetcher.DataFile = textBoxReportFile.Text;
                 }
             }
             else if (radioButtonIP.Checked)
             {
-                VantagePro.IPAddress = textBoxIPAddress.Text;
-                VantagePro.IPPort = Convert.ToInt16(textBoxIPPort.Text);
                 VantagePro.OperationalMode = VantagePro.OpMode.IP;
+                socketFetcher.Address = textBoxIPAddress.Text;
             }
             else if (radioButtonNone.Checked)
             {
@@ -60,8 +68,12 @@ namespace ASCOM.VantagePro
             }
 
             vantagePro.Tracing = ObservingConditions.tl.Enabled = chkTrace.Checked;
+            VantagePro.interval = TimeSpan.FromSeconds(Convert.ToInt32(textBoxInterval.Text));
 
             vantagePro.WriteProfile();
+            fileFetcher.WriteLowerProfile();
+            socketFetcher.WriteLowerProfile();
+            serialPortFetcher.WriteLowerProfile();
         }
 
         private void cmdCancel_Click(object sender, EventArgs e) // Cancel button event handler
@@ -93,9 +105,9 @@ namespace ASCOM.VantagePro
             comboBoxComPort.Items.Clear();
             comboBoxComPort.Items.AddRange(System.IO.Ports.SerialPort.GetPortNames());      // use System.IO because it's static
 
-            if (comboBoxComPort.Items.Contains(VantagePro.SerialPortName))
+            if (serialPortFetcher.ComPort != null && comboBoxComPort.Items.Contains(serialPortFetcher.ComPort))
             {
-                comboBoxComPort.SelectedItem = VantagePro.SerialPortName;
+                comboBoxComPort.SelectedItem = serialPortFetcher.ComPort;
             }
 
             switch (VantagePro.OperationalMode)
@@ -114,14 +126,17 @@ namespace ASCOM.VantagePro
                     break;
             }
 
-            textBoxReportFile.Text = VantagePro.DataFile;
+            textBoxReportFile.Text = fileFetcher.DataFile;
             chkTrace.Checked = vantagePro.Tracing;
             labelTracePath.Text = chkTrace.Checked ? VantagePro.traceLogFile : "";
-            textBoxIPAddress.Text = VantagePro.IPAddress;
+            textBoxIPAddress.Text = socketFetcher.Address;
+            textBoxInterval.Text = Convert.ToInt32(VantagePro.interval.TotalSeconds).ToString();
         }
 
         private void buttonChooser_Click(object sender, EventArgs e)
         {
+              if (!string.IsNullOrEmpty(fileFetcher.DataFile))
+                openFileDialogReportFile.InitialDirectory = System.IO.Path.GetDirectoryName(fileFetcher.DataFile);
             openFileDialogReportFile.ShowDialog();
         }
 
@@ -189,26 +204,26 @@ namespace ASCOM.VantagePro
             buttonTest.Text = "Testing ...";
             if (radioButtonReportFile.Checked)
             {
-                vantagePro.TestFileSettings(textBoxReportFile.Text, ref result, ref resultColor);
+                fileFetcher.Test(textBoxReportFile.Text, ref result, ref resultColor);
             }
             else if (radioButtonSerialPort.Checked)
             {
-                vantagePro.TestSerialSettings(comboBoxComPort.Text, ref result, ref resultColor);
+                serialPortFetcher.Test(comboBoxComPort.Text, ref result, ref resultColor);
             }
             else if (radioButtonIP.Checked)
             {
-                vantagePro.TestIPSettings(textBoxIPAddress.Text, ref result, ref resultColor);
+                socketFetcher.Test(textBoxIPAddress.Text, SocketFetcher.defaultPort.ToString(), ref result, ref resultColor);
             }
 
-            if (resultColor == vantagePro.colorGood)
+            if (resultColor == VantagePro.colorGood)
             {
                 MessageBox.Show(result, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-            else if (resultColor == vantagePro.colorWarning)
+            else if (resultColor == VantagePro.colorWarning)
             {
                 MessageBox.Show(result, "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
-            else if (resultColor == vantagePro.colorError)
+            else if (resultColor == VantagePro.colorError)
             {
                 MessageBox.Show(result, "Failure", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }

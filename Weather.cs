@@ -35,7 +35,6 @@ namespace Weather
         public abstract bool Enabled
         {
             get;
-            set;
         }
 
         public abstract WeatherStationInputMethod InputMethod

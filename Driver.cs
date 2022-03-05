@@ -66,7 +66,7 @@ namespace ASCOM.VantagePro
         /// <summary>
         /// Variable to hold the trace logger object (creates a diagnostic log file with information that you specify)
         /// </summary>
-        internal static TraceLogger tl;
+        internal static TraceLogger tl = VantagePro.tl;
 
         public static VantagePro vantagePro; 
 
@@ -76,7 +76,7 @@ namespace ASCOM.VantagePro
         /// </summary>
         public ObservingConditions()
         {
-            tl = new TraceLogger("", "VantageProDriver");
+            tl = VantagePro.tl;
             tl.LogMessage("ObservingConditions", "Starting initialisation");
 
             vantagePro = VantagePro.Instance;
@@ -103,16 +103,17 @@ namespace ASCOM.VantagePro
             // consider only showing the setup dialog if not connected
             // or call a different dialog if connected
             if (vantagePro.Connected)
-                System.Windows.Forms.MessageBox.Show("Already connected, just press OK");
-
-            using (SetupDialogForm F = new SetupDialogForm())
-            {
-                var result = F.ShowDialog();
-                if (result == System.Windows.Forms.DialogResult.OK)
+                System.Windows.Forms.MessageBox.Show("The driver is currently connected.\nDisconnect before changing settings!");
+            else
+                using (SetupDialogForm F = new SetupDialogForm())
                 {
-                    WriteProfile(); // Persist device configuration values to the ASCOM Profile store
+                    var result = F.ShowDialog();
+                    if (result == System.Windows.Forms.DialogResult.OK)
+                    {
+                        WriteProfile(); // Persist device configuration values to the ASCOM Profile store
+                        ReadProfile();
+                    }
                 }
-            }
         }
 
         public ArrayList SupportedActions
@@ -121,7 +122,7 @@ namespace ASCOM.VantagePro
             {
                 ArrayList list = vantagePro.SupportedActions;
 
-                tl.LogMessage("SupportedActions get - {0}", list.ToString());
+                tl.LogMessage("SupportedActions Get - {0}", list.ToString());
                 return list;
             }
         }
@@ -130,7 +131,7 @@ namespace ASCOM.VantagePro
         {
             string result = vantagePro.Action(actionName, actionParameters);
 
-            LogMessage("", "Action {0}, parameters {1}, result {2}", actionName, actionParameters, result);
+            LogMessage("Action", $"Action {actionName}, parameters {actionParameters}, result {result}");
             return result;
         }
 
@@ -175,13 +176,13 @@ namespace ASCOM.VantagePro
             {
                 bool connected = vantagePro.Connected;
 
-                LogMessage("Connected", "Get {0}", connected);
+                tl.LogMessage("Connected", $"Get - {connected}");
                 return connected;
             }
 
             set
             {
-                tl.LogMessage("Connected", "Set {0}", value);
+                tl.LogMessage("Connected", $"Set - {value}");
                 vantagePro.Connected = value;
             }
         }
@@ -193,7 +194,7 @@ namespace ASCOM.VantagePro
             {
                 string driverDescription = VantagePro.DriverDescription;
 
-                tl.LogMessage("Description Get", driverDescription);
+                tl.LogMessage("Description", $"Get - {driverDescription}");
                 return driverDescription;
             }
         }
@@ -204,7 +205,7 @@ namespace ASCOM.VantagePro
             {
                 string driverInfo = VantagePro.DriverInfo;
 
-                tl.LogMessage("DriverInfo Get", driverInfo);
+                tl.LogMessage("DriverInfo", $"Get - {driverInfo}");
                 return driverInfo;
             }
         }
@@ -215,7 +216,7 @@ namespace ASCOM.VantagePro
             {
                 string driverVersion = VantagePro.DriverVersion;
 
-                tl.LogMessage("DriverVersion Get", driverVersion);
+                tl.LogMessage("DriverVersion", $"Get - {driverVersion}");
                 return driverVersion;
             }
         }
@@ -225,7 +226,7 @@ namespace ASCOM.VantagePro
             // set by the driver wizard
             get
             {
-                LogMessage("InterfaceVersion Get", "1");
+                LogMessage("InterfaceVersion", "Get - 1");
                 return Convert.ToInt16("1");
             }
         }
@@ -234,9 +235,9 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                string name = Name;
+                string name = "VantagePro";
 
-                tl.LogMessage("Name Get", name);
+                tl.LogMessage("Name", $"Get - {name}");
                 return name;
             }
         }
@@ -260,12 +261,12 @@ namespace ASCOM.VantagePro
             {
                 double averagePeriod = vantagePro.AveragePeriod;
 
-                LogMessage("AveragePeriod", "get - {0}", averagePeriod);
+                LogMessage("AveragePeriod", $"Get - {averagePeriod}");
                 return averagePeriod;
             }
             set
             {
-                LogMessage("AveragePeriod", "set - {0}", value);
+                LogMessage("AveragePeriod", $"Set - {value}");
                 vantagePro.AveragePeriod = value;
             }
         }
@@ -278,11 +279,8 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                double cloudCover = vantagePro.CloudCover;
-
-
-                LogMessage("CloudCover", "get - {0}", cloudCover);
-                return cloudCover;
+                LogMessage("SkyBrightness", "Get - not implemented");
+                return vantagePro.CloudCover;
             }
         }
 
@@ -299,7 +297,7 @@ namespace ASCOM.VantagePro
             {
                 double dewPoint = vantagePro.DewPoint;
 
-                LogMessage("DewPoint", "get - {0}", dewPoint);
+                LogMessage("DewPoint", $"Get - {dewPoint}");
                 return dewPoint; ;
             }
         }
@@ -317,7 +315,7 @@ namespace ASCOM.VantagePro
             {
                 double humidity = vantagePro.Humidity;
 
-                LogMessage("Humidity", "get - {0}", humidity);
+                LogMessage("Humidity", $"Get - {humidity}");
                 return humidity;
             }
         }
@@ -336,7 +334,7 @@ namespace ASCOM.VantagePro
             {
                 double pressure = vantagePro.Pressure;
 
-                LogMessage("Pressure", "get - {0}", pressure);
+                LogMessage("Pressure", $"Get - {pressure}");
                 return pressure;
             }
         }
@@ -354,7 +352,7 @@ namespace ASCOM.VantagePro
             {
                 double rainRate = vantagePro.RainRate;
 
-                LogMessage("RainRate", "get - {0}", rainRate);
+                LogMessage("RainRate", $"Get - {rainRate}");
                 return rainRate;
             }
         }
@@ -389,7 +387,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                LogMessage("SkyBrightness", "get - not implemented");
+                LogMessage("SkyBrightness", "Get - not implemented");
                 return vantagePro.SkyBrightness;
             }
         }
@@ -401,7 +399,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                LogMessage("SkyQuality", "get - not implemented");
+                LogMessage("SkyQuality", "Get - not implemented");
                 return vantagePro.SkyBrightness;
             }
         }
@@ -413,7 +411,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                LogMessage("StarFWHM", "get - not implemented");
+                LogMessage("StarFWHM", "Get - not implemented");
                 return vantagePro.StarFWHM;
             }
         }
@@ -425,7 +423,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                LogMessage("SkyTemperature", "get - not implemented");
+                LogMessage("SkyTemperature", "Get - not implemented");
                 return vantagePro.SkyTemperature;
             }
         }
@@ -439,7 +437,7 @@ namespace ASCOM.VantagePro
             {
                 double temperature = vantagePro.Temperature;
 
-                LogMessage("Temperature", "get - {0}", temperature);
+                LogMessage("Temperature", $"Get - {temperature}");
                 return temperature;
             }
         }
@@ -459,7 +457,7 @@ namespace ASCOM.VantagePro
             double timeSinceLastUpdate = vantagePro.TimeSinceLastUpdate(PropertyName);
 
             // return the time
-            LogMessage("TimeSinceLastUpdate", "{0} - not implemented", timeSinceLastUpdate);
+            LogMessage("TimeSinceLastUpdate", $"{PropertyName} - {timeSinceLastUpdate}");
             return timeSinceLastUpdate;
         }
 
@@ -476,7 +474,7 @@ namespace ASCOM.VantagePro
             {
                 double windDirection = vantagePro.WindDirection;
 
-                LogMessage("WindDirection", "get - {0}", windDirection);
+                LogMessage("WindDirection", $"Get - {windDirection}");
                 return windDirection;
             }
         }
@@ -488,7 +486,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                LogMessage("WindGust", "get - not implemented");
+                LogMessage("WindGust", "Get - not implemented");
                 return vantagePro.WindGust;
             }
         }
@@ -502,7 +500,7 @@ namespace ASCOM.VantagePro
             {
                 double windSpeed = vantagePro.WindSpeedMps;
 
-                LogMessage("WindSpeed", "get - {0}", windSpeed);
+                LogMessage("WindSpeed", $"Get - {windSpeed}");
                 return windSpeed;
             }
         }
