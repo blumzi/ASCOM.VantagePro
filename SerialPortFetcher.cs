@@ -73,7 +73,9 @@ namespace ASCOM.VantagePro
 
         private SerialPort Open()
         {
-            SerialPort serialPort = new System.IO.Ports.SerialPort
+            string op = "Serial.Open";
+
+            SerialPort serialPort = new SerialPort
             {
                 PortName = ComPort,
                 BaudRate = Speed,
@@ -84,10 +86,16 @@ namespace ASCOM.VantagePro
             try
             {
                 serialPort.Open();
+                #region trace
+                VantagePro.LogMessage(op, $"{Source} is {((serialPort.IsOpen) ? "open" : "closed")}");
+                #endregion
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
+                #region trace
+                VantagePro.LogMessage(op, $"Caught {ex.Message} at {ex.StackTrace}");
+                #endregion
+                return null;
             }
             return serialPort;
         }
@@ -104,13 +112,16 @@ namespace ASCOM.VantagePro
                 if ((rxBytes[0] = serialPort.ReadByte()) == '\n' && (rxBytes[1] = serialPort.ReadByte()) == '\r')
                 {
                     #region trace
-                    VantagePro.tl.LogMessage(op, $"{Source}: attempt: {attempt + 1}, Succeeded ([{rxBytes[0]:X2}], [{rxBytes[1]:X2}])");
+                    VantagePro.LogMessage(op, $"{Source}: attempt: {attempt + 1}, Succeeded ([{rxBytes[0]:X2}], [{rxBytes[1]:X2}])");
                     #endregion
                     return true;
                 }
                 Thread.Sleep(1000);
             }
 
+            #region trace
+            VantagePro.LogMessage(op, $"{Source}: Could not wakeup the station.");
+            #endregion
             return false;
         }
 
@@ -118,28 +129,31 @@ namespace ASCOM.VantagePro
         {
             get
             {
+                string op = "Serial.StationType";
                 SerialPort serialPort;
 
                 byte[] rxBytes;
 
-                try
+                serialPort = Open();
+                if (serialPort == null)
                 {
-                    serialPort = Open();
-                }
-                catch
-                {
+                    #region trace
+                    VantagePro.LogMessage(op, $"Could not open {Source}");
+                    #endregion
                     return "Unknown";
                 }
-
+                
                 Wakeup(serialPort);
                 serialPort.Write(GetStationTypeTxBytes, 0, GetStationTypeTxBytes.Length);
                 Thread.Sleep(500);
                 rxBytes = Encoding.ASCII.GetBytes(serialPort.ReadExisting());
                 serialPort.Close();
 
-                if (rxBytes.Length < 2 || rxBytes[0] != ACK || !ByteToStationModel.ContainsKey(rxBytes[1]))
+                #region trace
+                VantagePro.LogMessage(op, $"Got {ByteArrayToString(rxBytes)}");
+                #endregion
+                if (rxBytes == null || rxBytes.Length < 2 || rxBytes[0] != ACK || !ByteToStationModel.ContainsKey(rxBytes[1]))
                     return "Unknown:";
-
                 return ByteToStationModel[rxBytes[1]];
             }
         }
@@ -167,7 +181,7 @@ namespace ASCOM.VantagePro
             string txString = new string(GetLoopTxBytes);
             serialPort.Write(txString);
             #region trace
-            VantagePro.tl.LogMessage(op, $"{Source}: Wrote: {txString}");
+            VantagePro.LogMessage(op, $"{Source}: Wrote: {txString}");
             #endregion
 
             int rxByte;
@@ -177,7 +191,7 @@ namespace ASCOM.VantagePro
                 goto BailOut;
             }
             #region trace
-            VantagePro.tl.LogMessage(op, $"{Source}: Got ACK ([{rxByte:X2}])");
+            VantagePro.LogMessage(op, $"{Source}: Got ACK ([{rxByte:X2}])");
             #endregion
 
             Thread.Sleep(500);
@@ -189,7 +203,7 @@ namespace ASCOM.VantagePro
             }
 
             #region trace
-            VantagePro.tl.LogMessage(op, $"{Source}: Successfully read {rxBytes.Length} bytes");
+            VantagePro.LogMessage(op, $"{Source}: Successfully read {rxBytes.Length} bytes");
             #endregion
 
             serialPort.Close();
@@ -198,7 +212,7 @@ namespace ASCOM.VantagePro
         BailOut:
             #region trace
             if (!string.IsNullOrEmpty(error))
-                VantagePro.tl.LogMessage(op, error);
+                 VantagePro.LogMessage(op, error);
             #endregion
             if (serialPort.IsOpen)
                 serialPort.Close();
@@ -208,15 +222,15 @@ namespace ASCOM.VantagePro
         public void Test(string port, ref string result, ref Color color)
         {
             #region trace
-            string traceId = "Serial.Test";
+            string op = "Serial.Test";
             #endregion
 
             if (string.IsNullOrWhiteSpace(port))
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, "Empty port");
+                VantagePro.LogMessage(op, "Empty port name");
                 #endregion
-                result = "Empty port";
+                result = "Empty port name";
                 color = VantagePro.colorError;
                 return;
             }
@@ -227,7 +241,7 @@ namespace ASCOM.VantagePro
             if (!string.IsNullOrEmpty(stationType))
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, $"{Source}: Found a \"{stationType}\" type station.");
+                VantagePro.LogMessage(op, $"{Source}: Found a \"{stationType}\" type station.");
                 #endregion
                 result = $"Found a \"{stationType}\" type station at {Source}.";
                 color = VantagePro.colorGood;
@@ -235,7 +249,7 @@ namespace ASCOM.VantagePro
             else
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, $"Could not find a station at {Source}.");
+                VantagePro.LogMessage(op, $"Could not find a station at {Source}.");
                 #endregion
                 result = $"Could not find a station at {Source}.";
                 color = VantagePro.colorError;

@@ -56,7 +56,7 @@ namespace ASCOM.VantagePro
                 crc = (UInt16)(crc_table[(crc >> 8) ^ bytes[i]] ^ (crc << 8));
 
             #region trace
-            VantagePro.tl.LogMessage("CalculateCRC", $"CRC: {(crc == 0 ? "OK" : "BAD")}");
+             VantagePro.LogMessage("CalculateCRC", $"CRC: {(crc == 0 ? "OK" : "BAD")}");
             #endregion
             return crc == 0;
         }
@@ -65,14 +65,14 @@ namespace ASCOM.VantagePro
         {
             string op = "FetchSensorData";
             #region trace
-            VantagePro.tl.LogMessage(op, $"Start");
+             VantagePro.LogMessage(op, $"Start");
             #endregion
             byte[] rxBytes = GetLoopDataBytes();
 
             if (!CalculateCRC(rxBytes))
             {
                 #region trace
-                VantagePro.tl.LogMessage(op, $"{DataSource}: Bad CRC, packet discarded");
+                 VantagePro.LogMessage(op, $"{DataSource}: Bad CRC, packet discarded");
                 #endregion
                 return;
             }
@@ -80,11 +80,11 @@ namespace ASCOM.VantagePro
             ParseSensorData(rxBytes);
             LastRead = DateTime.Now;
             #region trace
-            VantagePro.tl.LogMessage(op, $"End");
+             VantagePro.LogMessage(op, $"End");
             #endregion
         }
 
-        private string ByteArrayToString(byte[] arr)
+        protected string ByteArrayToString(byte[] arr)
         {
             StringBuilder hex = new StringBuilder(arr.Length * 3);
 
@@ -111,18 +111,18 @@ namespace ASCOM.VantagePro
             string op = "ParseSensorData";
 
             #region trace
-            VantagePro.tl.LogMessage(op, ByteArrayToString(buf));
+            VantagePro.LogMessage(op, ByteArrayToString(buf));
             #endregion
 
             if (buf[0] != 'L' || buf[1] != 'O' || buf[2] != 'O' || buf[4] != 0 || buf[95] != '\n' || buf[96] != '\r')
             {
                 #region trace
-                VantagePro.tl.LogMessage(op, $"Bad header [0]: {buf[0]}, [1]: {buf[1]}, [2]: {buf[2]}, [4]: {buf[4]} and/or trailer [95]: {buf[95]}, [96]: {buf[96]}");
+                 VantagePro.LogMessage(op, $"Bad header [0]: {buf[0]}, [1]: {buf[1]}, [2]: {buf[2]}, [4]: {buf[4]} and/or trailer [95]: {buf[95]}, [96]: {buf[96]}");
                 #endregion
                 return;
             }
             #region trace
-            VantagePro.tl.LogMessage(op, "Header and trailer are valid");
+            VantagePro.LogMessage(op, "Header and trailer are valid");
             #endregion
 
             lock (sensorDataLock)
@@ -146,7 +146,7 @@ namespace ASCOM.VantagePro
             }
 
             #region trace
-            VantagePro.tl.LogMessage(op, $"Successfully parsed sensor data (packet CRC: {GetUshort(buf, 97):X2})");
+            VantagePro.LogMessage(op, $"Successfully parsed sensor data (packet CRC: {GetUshort(buf, 97):X2})");
             #endregion
         }
 

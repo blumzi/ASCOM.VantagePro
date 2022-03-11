@@ -61,7 +61,7 @@ namespace ASCOM.VantagePro
             if (string.IsNullOrEmpty(DataFile))
             {
                 #region trace
-                VantagePro.tl.LogMessage(op, "Empty file name");
+                VantagePro.LogMessage(op, "Empty file name");
                 #endregion
                 return;
             }
@@ -69,7 +69,7 @@ namespace ASCOM.VantagePro
             if (LastRead == DateTime.MinValue || File.GetLastWriteTime(DataFile).CompareTo(LastRead) > 0)
             {
                 #region trace
-                VantagePro.tl.LogMessage(op, $"Start");
+                VantagePro.LogMessage(op, $"Start");
                 #endregion
                 lock (sensorDataLock)
                 {
@@ -96,7 +96,7 @@ namespace ASCOM.VantagePro
                                     sensorData[key] = value;
                                     #region trace
                                     if (VantagePro.keysInUse.Contains(key))
-                                        VantagePro.tl.LogMessage(op, $"sensorData[{key}] = \"{sensorData[key]}\"");
+                                         VantagePro.LogMessage(op, $"sensorData[{key}] = \"{sensorData[key]}\"");
                                     #endregion
                                 }
 
@@ -120,7 +120,13 @@ namespace ASCOM.VantagePro
                     }
                 }
                 #region trace
-                VantagePro.tl.LogMessage(op, $"End");
+                VantagePro.LogMessage(op, $"End");
+                #endregion
+            }
+            else
+            {
+                #region trace
+                VantagePro.LogMessage(op, $"{Source} did not change");
                 #endregion
             }
         }
@@ -146,7 +152,7 @@ namespace ASCOM.VantagePro
             if (string.IsNullOrEmpty(path))
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, "Empty report file name");
+                VantagePro.LogMessage(traceId, "Empty report file name");
                 #endregion
                 color = VantagePro.colorError;
                 result = "Empty report file name!";
@@ -157,14 +163,14 @@ namespace ASCOM.VantagePro
             if (!File.Exists(path))
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, $"{Source}: File does not exist");
+                VantagePro.LogMessage(traceId, $"{Source}: File does not exist");
                 #endregion
                 result = $"File \"{path}\" does not exist.";
                 color = VantagePro.colorError;
                 goto Out;
             }
             #region trace
-            VantagePro.tl.LogMessage(traceId, $"{Source}: File exists");
+            VantagePro.LogMessage(traceId, $"{Source}: File exists");
             #endregion
 
             Dictionary<string, string> dict = new Dictionary<string, string>();
@@ -201,7 +207,7 @@ namespace ASCOM.VantagePro
             if (dict.Keys.Count == 0)
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, $"{Source}: Failed to parse file contents");
+                VantagePro.LogMessage(traceId, $"{Source}: Failed to parse file contents");
                 #endregion
                 result = $"Cannot get weather data from \"{path}\".";
                 color = VantagePro.colorError;
@@ -209,7 +215,7 @@ namespace ASCOM.VantagePro
             }
             #region trace
             foreach (var key in dict.Keys) {
-                VantagePro.tl.LogMessage(traceId, $"{Source}: dict[\"{key}\"] = {dict[key]}");
+                 VantagePro.LogMessage(traceId, $"{Source}: dict[\"{key}\"] = {dict[key]}");
             }
             #endregion
 
@@ -219,7 +225,7 @@ namespace ASCOM.VantagePro
                 stationName = dict["StationName"];
             }
             #region trace
-            VantagePro.tl.LogMessage(traceId, $"{Source}: Success, the file contains a valid weather report (stationName: {stationName})");
+            VantagePro.LogMessage(traceId, $"{Source}: Success, the file contains a valid weather report (stationName: {stationName})");
             #endregion
             color = VantagePro.colorGood;
         Out:

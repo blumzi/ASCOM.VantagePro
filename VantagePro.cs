@@ -105,6 +105,11 @@ namespace ASCOM.VantagePro
             }
         }
 
+        public static void LogMessage(string op, string message)
+        {
+            tl.LogMessage(op, message);
+        }
+
         public static readonly List<string> keysInUse = new List<string> {
             "outsideHumidity",
             "outsideDewPt",

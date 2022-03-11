@@ -55,28 +55,33 @@ namespace ASCOM.VantagePro
         private Socket Open()
         {
             string op = "Socket.Open";
-            Socket socket;
+            Socket socket = null;
 
             try
             {
                 IPAddress.TryParse(Address, out IPAddress addr);
                 IPEndPoint ipe = new IPEndPoint(addr, Port);
                 socket = new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                #region trace
+                 VantagePro.LogMessage(op, $"Connecting to {Source}");
+                #endregion
                 socket.Connect(ipe);
 
                 if (socket.Connected)
                 {
-                    VantagePro.tl.LogMessage(op, $"Connected to {Source}");
-                    return socket;
+                    #region trace
+                     VantagePro.LogMessage(op, $"Connected to {Source}");
+                    #endregion
                 }
             }
             catch (Exception ex)
             {
-               VantagePro.tl.LogMessage(op, $"Caught: {ex.Message} at {ex.StackTrace}");
-                throw;
+                #region trace
+                 VantagePro.LogMessage(op, $"Caught: {ex.Message} at {ex.StackTrace}");
+                #endregion
             }
 
-            return null;
+            return socket;
         }
 
         /// <summary>
@@ -89,7 +94,9 @@ namespace ASCOM.VantagePro
             {
                 socket.Shutdown(SocketShutdown.Both);
                 socket.Disconnect(true);
-               VantagePro.tl.LogMessage("Socket.Close", $"{Source}: " + (socket.Connected ? "still connected" : "disconnected"));
+                #region trace
+                 VantagePro.LogMessage("Socket.Close", $"{Source}: " + (socket.Connected ? "still connected" : "disconnected"));
+                #endregion
                 return true;
             }
             catch { }
@@ -110,7 +117,7 @@ namespace ASCOM.VantagePro
                 if (nRxBytes == 2 && Encoding.ASCII.GetString(rxBytes, 0, nRxBytes) == "\n\r")
                 {
                     #region trace
-                   VantagePro.tl.LogMessage(op, $"{Source}: attempt#: {attempt}, Success");
+                     VantagePro.LogMessage(op, $"{Source}: attempt#: {attempt}, Success");
                     #endregion
                     return true;
                 }
@@ -118,7 +125,7 @@ namespace ASCOM.VantagePro
             }
 
             #region trace
-           VantagePro.tl.LogMessage(op, $"{Source}: Failed after {attempt + 1} attempts");
+             VantagePro.LogMessage(op, $"{Source}: Failed after {attempt + 1} attempts");
             #endregion
             return false;
         }
@@ -127,6 +134,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
+                string op = "Socket.StationType";
                 byte[] rxBytes = new byte[2];
                 byte[] txBytes = Encoding.ASCII.GetBytes(GetStationTypeTxBytes);
                 int nRxBytes = 0;
@@ -144,12 +152,16 @@ namespace ASCOM.VantagePro
                     if (nRxBytes < 2 || rxBytes[0] != ACK || !ByteToStationModel.ContainsKey(rxBytes[1]))
                         return null;
 
-                    return ByteToStationModel[rxBytes[1]];
+                    string model = ByteToStationModel[rxBytes[1]];
+                    #region trace
+                     VantagePro.LogMessage(op, $"Got model: {model}");
+                    #endregion
+                    return model;
                 }
                 catch (Exception ex)
                 {
                     #region trace
-                    VantagePro.tl.LogMessage("StationType", $"Caught: {ex.Message} at {ex.StackTrace}");
+                     VantagePro.LogMessage(op, $"Caught: {ex.Message} at {ex.StackTrace}");
                     #endregion
                     return null;
                 }
@@ -172,26 +184,21 @@ namespace ASCOM.VantagePro
             socket.Receive(rxBytes, 1, 0);
             if (rxBytes[0] != ACK)
             {
-                #region trace
-                VantagePro.tl.LogMessage(op, $"{Source}: Got 0x{rxBytes[0]:X2} instead of 0x{ACK:X2}");
-                #endregion
+                error = $"Got 0x{rxBytes[0]:X2} instead of ACK";
                 goto BailOut;
             }
             #region trace
-            VantagePro.tl.LogMessage(op, $"{Source}: Got ACK (0x{rxBytes[0]:X2})");
+             VantagePro.LogMessage(op, $"{Source}: Got ACK (0x{rxBytes[0]:X2})");
             #endregion
 
             int nRxBytes;
             if ((nRxBytes = socket.Receive(rxBytes, rxBytes.Length, 0)) != rxBytes.Length)
             {
-                #region trace
-                VantagePro.tl.LogMessage(op, $"{Source}: Failed to receive {rxBytes.Length} bytes, received only {nRxBytes} bytes");
-                #endregion
+                error = $"Received {nRxBytes} instead of {rxBytes.Length}";
                 goto BailOut;
             }
-
             #region trace
-            VantagePro.tl.LogMessage(op, $"{Source}: Received {rxBytes.Length} bytes");
+             VantagePro.LogMessage(op, $"{Source}: Received {rxBytes.Length} bytes");
             #endregion
             return rxBytes;
 
@@ -199,7 +206,7 @@ namespace ASCOM.VantagePro
             #region trace
             if (!string.IsNullOrEmpty(error))
             {
-                VantagePro.tl.LogMessage(op, error);
+                 VantagePro.LogMessage(op, error);
             }
             #endregion
 
@@ -222,14 +229,15 @@ namespace ASCOM.VantagePro
 
         public void Test(string address, string port, ref string result, ref Color color)
         {
-            #region trace
-            string traceId = "Socket.Test";
-            #endregion
+            string op = "Socket.Test";
 
+            #region trace
+             VantagePro.LogMessage(op, "Start");
+            #endregion
             if (string.IsNullOrWhiteSpace(address))
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, "Empty IP address");
+                 VantagePro.LogMessage(op, "Empty IP address");
                 #endregion
                 result = "Empty IP address";
                 color = VantagePro.colorError;
@@ -252,13 +260,16 @@ namespace ASCOM.VantagePro
                     Port = defaultPort;
                 }
             }
+            #region trace
+             VantagePro.LogMessage(op, $"Source: {Source}");
+            #endregion
 
             string stationType = StationType;
 
             if (!string.IsNullOrEmpty(stationType))
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, $"{Source}: Found a \"{stationType}\" type station.");
+                 VantagePro.LogMessage(op, $"{Source}: Found a \"{stationType}\" type station.");
                 #endregion
                 result = $"Found a \"{stationType}\" type station at {Source}.";
                 color = VantagePro.colorGood;
@@ -266,11 +277,14 @@ namespace ASCOM.VantagePro
             else
             {
                 #region trace
-                VantagePro.tl.LogMessage(traceId, $"Could not find a station at {Source}.");
+                 VantagePro.LogMessage(op, $"Could not find a station at {Source}.");
                 #endregion
                 result = $"Could not find a station at {Source}.";
                 color = VantagePro.colorError;
             }
+            #region trace
+             VantagePro.LogMessage(op, "Done");
+            #endregion
         }
     }
 }
