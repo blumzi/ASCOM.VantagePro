@@ -23,7 +23,8 @@ The driver periodically parses an ASCII report file (the path is specified in th
 >**outsideDewPt**=_16.9_<br>
 >**utcTime**= _4:03p_<br>
 >**utcDate**=_06/23/19_<br>
->**StationName**=_My Very Own Station_<br>
+>**stationName**=_My Very Own Station_<br>
+>**stationModel**=_My Very Own Model<br>
 
 NOTES:
 -- The **bold** words are keywords, the must appear exactly as presented above

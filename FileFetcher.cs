@@ -11,7 +11,9 @@ namespace ASCOM.VantagePro
     {
         public const string Profile_DataFile = "DataFile";
 
-        public string DataFile { get; set; }
+        public static string DataFile { get; set; }
+        public string _stationName = "Unknown";
+        public string _stationModel = "Unknown";
 
         public FileFetcher()
         {
@@ -50,7 +52,29 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return "Unknown";
+                if (!sensorData.TryGetValue("stationModel", out _stationModel))
+                    return "Unknown";
+                return _stationModel;
+            }
+
+            set
+            {
+                _stationModel = value;
+            }
+        }
+
+        public override string StationName
+        {
+            get
+            {
+                if (!sensorData.TryGetValue("stationName", out _stationName))
+                    return "Unknown";
+                return _stationName;
+            }
+
+            set
+            {
+                _stationName = value;
             }
         }
 
@@ -219,13 +243,9 @@ namespace ASCOM.VantagePro
             }
             #endregion
 
-            result = $"\"{path}\" contains a valid report";
-            string stationName = "Unknown";
-            if (dict.ContainsKey("StationName") && !string.IsNullOrWhiteSpace(dict["StationName"])) {
-                stationName = dict["StationName"];
-            }
+            result = $"\"{path}\" contains a valid report, station name: {StationName}";
             #region trace
-            VantagePro.LogMessage(traceId, $"{Source}: Success, the file contains a valid weather report (stationName: {stationName})");
+            VantagePro.LogMessage(traceId, $"{Source}: Success, the file contains a valid weather report (stationName: {StationName})");
             #endregion
             color = VantagePro.colorGood;
         Out:

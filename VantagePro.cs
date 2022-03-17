@@ -28,6 +28,7 @@ namespace ASCOM.VantagePro
 
         private bool _initialized = false;
         private bool _connected = false;
+        private static OpMode _opMode = OpMode.None;
 
         private static Fetcher fetcher;
 
@@ -92,7 +93,34 @@ namespace ASCOM.VantagePro
             return (fetcher == null) ? "Unknown" : fetcher.StationType;
         }
 
-        public static OpMode OperationalMode { get; set; }
+        public static OpMode OperationalMode {
+            get
+            {
+                return _opMode;
+            }
+
+            set
+            {
+                _opMode = value;
+                switch (_opMode)
+                {
+                    case OpMode.None:
+                        fetcher = null;
+                        break;
+                    case OpMode.File:
+                        fetcher = new FileFetcher();
+                        break;
+                    case OpMode.Serial:
+                        fetcher = new SerialPortFetcher();
+                        break;
+                    case OpMode.IP:
+                        fetcher = new SocketFetcher();
+                        break;
+
+                }
+            }
+        }
+
         public bool Tracing {
             get
             {
@@ -247,8 +275,11 @@ namespace ASCOM.VantagePro
                 }
                 else
                 {
-                    info = $"station model: {GetStationType()}, ";
-                    info += (fetcher == null) ? "" : fetcher.DataSource.ToString();
+                    info = $"station model: \"{GetStationType()}\", ";
+                    if (fetcher != null)
+                    {
+                        info += $"station name: \"{fetcher.StationName}\", source: {fetcher.DataSource}";
+                    }
                 }
 
                 var v = AssemblyVersion;
