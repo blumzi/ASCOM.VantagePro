@@ -137,7 +137,7 @@ namespace ASCOM.VantagePro
         {
             if (!string.IsNullOrEmpty(FileFetcher.DataFile))
                 openFileDialogReportFile.InitialDirectory = System.IO.Path.GetDirectoryName(FileFetcher.DataFile);
-            var result = openFileDialogReportFile.ShowDialog();
+            var result = openFileDialogReportFile.ShowDialog(this);
             if (result == DialogResult.OK)
             {
                 FileFetcher.DataFile = openFileDialogReportFile.FileName;
