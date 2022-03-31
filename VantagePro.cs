@@ -33,7 +33,7 @@ namespace ASCOM.VantagePro
         private static Fetcher fetcher;
 
         private static readonly string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        public static readonly string traceLogFile = $"{desktop}\\VantagePro-{DriverVersion}.log";
+        public static readonly string traceLogFile = $"{desktop}\\VantagePro.log";
         public static TraceLogger tl = new TraceLogger(traceLogFile, "VantagePro");
 
         public VantagePro() {
@@ -82,15 +82,8 @@ namespace ASCOM.VantagePro
         /// </summary>
         public void Refresh()
         {
-            DateTime currentLastRead = fetcher.LastRead;
-
-            while (fetcher.LastRead == currentLastRead)
-                Thread.Sleep(500);
-        }
-
-        private static string GetStationType()
-        {
-            return (fetcher == null) ? "Unknown" : fetcher.StationType;
+            fetcher.Stop();
+            fetcher.Start();
         }
 
         public static OpMode OperationalMode {
@@ -268,7 +261,7 @@ namespace ASCOM.VantagePro
         {
             get  
             {
-                string info;
+                string info = "";
 
                 if (OperationalMode == OpMode.None)
                 {
@@ -276,10 +269,10 @@ namespace ASCOM.VantagePro
                 }
                 else
                 {
-                    info = $"station model: \"{GetStationType()}\", ";
                     if (fetcher != null)
                     {
-                        info += $"station name: \"{fetcher.StationName}\", source: {fetcher.DataSource}";
+                        fetcher.FetchSensorData();
+                        info += $"Model: {fetcher.StationModel}, name: \"{fetcher.StationName}\", source: {fetcher.DataSource}";
                     }
                 }
 
@@ -635,7 +628,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                return GetStationType();
+                return (fetcher == null) ? "Unknown" : fetcher.StationModel;
             }
         }
 
