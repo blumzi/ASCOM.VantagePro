@@ -171,11 +171,20 @@ namespace ASCOM.VantagePro
         public override byte[] GetLoopDataBytes()
         {
             string op = $"Socket.GetLoopDataBytes";
-            string error = null;
+            string error;
             Socket socket;
 
-            if ((socket = Open()) == null || !Wakeup(socket))
+            socket = Open();
+            if (socket == null) {
+                error = "Could not Open() the socket";
                 goto BailOut;
+            }
+
+            if (!Wakeup(socket))
+            {
+                error = "Could not Wakeup() the station";
+                goto BailOut;
+            }
 
             Byte[] txBytes = Encoding.ASCII.GetBytes(GetLoopTxBytes);
             Byte[] rxBytes = new byte[99];
