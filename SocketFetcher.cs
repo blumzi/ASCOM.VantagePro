@@ -132,7 +132,7 @@ namespace ASCOM.VantagePro
             return false;
         }
 
-        public override string StationType
+        public override string StationModel
         {
             get
             {
@@ -179,17 +179,34 @@ namespace ASCOM.VantagePro
         {
             string op = $"Socket.GetLoopDataBytes";
             string error;
-            Socket socket;
+            Socket socket = null;
+            int tries;
 
-            socket = Open();
-            if (socket == null) {
-                error = "Could not Open() the socket";
-                goto BailOut;
+            for (tries = 0; tries < 10; tries++)
+            {
+                socket = Open();
+                if (socket == null)
+                {
+                    VantagePro.LogMessage(op, $"try#{tries}: Could not Open {DataSource}");
+                    Thread.Sleep(500);
+                    continue;
+                }
+
+                if (!Wakeup(socket))
+                {
+                    VantagePro.LogMessage(op, $"try#{tries}: Could not Wakeup {DataSource}");
+                    Close(socket);
+                    socket = null;
+                    Thread.Sleep(500);
+                    continue;
+                }
+                else
+                    break;
             }
 
-            if (!Wakeup(socket))
+            if (socket == null)
             {
-                error = "Could not Wakeup() the station";
+                error = $"Could not open and wakeup {DataSource} after {tries} tries.";
                 goto BailOut;
             }
 
@@ -280,7 +297,7 @@ namespace ASCOM.VantagePro
              VantagePro.LogMessage(op, $"Source: {Source}");
             #endregion
 
-            string stationType = StationType;
+            string stationType = StationModel;
 
             if (!string.IsNullOrEmpty(stationType))
             {
