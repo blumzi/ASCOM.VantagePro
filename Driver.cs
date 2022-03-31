@@ -66,7 +66,7 @@ namespace ASCOM.VantagePro
         /// <summary>
         /// Variable to hold the trace logger object (creates a diagnostic log file with information that you specify)
         /// </summary>
-        internal static TraceLogger tl = VantagePro.tl;
+        internal static TraceLogger tl;
 
         public static VantagePro vantagePro; 
 
@@ -76,14 +76,12 @@ namespace ASCOM.VantagePro
         /// </summary>
         public ObservingConditions()
         {
-            tl = VantagePro.tl;
-            tl.LogMessage("ObservingConditions", "Starting initialisation");
-
             vantagePro = VantagePro.Instance;
             vantagePro.ReadProfile();
+            tl = VantagePro.tl;
 
             tl.LogMessage("ObservingConditions", "=====");
-            tl.LogMessage("ObservingConditions", "Completed initialisation");
+            tl.LogMessage("ObservingConditions", $"Completed initialisation (info: {VantagePro.DriverInfo})");
         }
 
 

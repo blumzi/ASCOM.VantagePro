@@ -73,7 +73,7 @@ namespace ASCOM.VantagePro
 
 		public abstract VantagePro.DataSourceClass DataSource { get; }
 
-		public abstract string StationType { get; set; }
+		public abstract string StationModel { get; set; }
 
 		public abstract string StationName { get; set;  }
 

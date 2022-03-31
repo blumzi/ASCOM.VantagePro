@@ -127,7 +127,7 @@ namespace ASCOM.VantagePro
             return false;
         }
 
-        public override string StationType
+        public override string StationModel
         {
             get
             {
@@ -263,7 +263,7 @@ namespace ASCOM.VantagePro
             }
             ComPort = port;
 
-            string stationType = StationType;
+            string stationType = StationModel;
 
             if (!string.IsNullOrEmpty(stationType))
             {

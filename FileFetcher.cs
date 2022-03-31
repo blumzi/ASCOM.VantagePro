@@ -48,7 +48,7 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public override string StationType
+        public override string StationModel
         {
             get
             {
@@ -93,7 +93,7 @@ namespace ASCOM.VantagePro
             if (LastRead == DateTime.MinValue || File.GetLastWriteTime(DataFile).CompareTo(LastRead) > 0)
             {
                 #region trace
-                VantagePro.LogMessage(op, $"Start");
+                VantagePro.LogMessage(op, $">>> Start");
                 #endregion
                 lock (sensorDataLock)
                 {
@@ -119,8 +119,7 @@ namespace ASCOM.VantagePro
                                     value = words[1].Trim();
                                     sensorData[key] = value;
                                     #region trace
-                                    if (VantagePro.keysInUse.Contains(key))
-                                         VantagePro.LogMessage(op, $"sensorData[{key}] = \"{sensorData[key]}\"");
+                                    VantagePro.LogMessage(op, $"sensorData[{key}] = \"{sensorData[key]}\"");
                                     #endregion
                                 }
 
@@ -144,7 +143,7 @@ namespace ASCOM.VantagePro
                     }
                 }
                 #region trace
-                VantagePro.LogMessage(op, $"End");
+                VantagePro.LogMessage(op, $"<<< End");
                 #endregion
             }
             else
