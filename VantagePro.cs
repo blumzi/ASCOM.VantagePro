@@ -118,6 +118,7 @@ namespace ASCOM.VantagePro
             "rainRate",
             "windDir",
             "windSpeed",
+            "windGust",
             "utcDate",
             "utcTime"
         };
@@ -418,6 +419,7 @@ namespace ASCOM.VantagePro
                 case "WindDirection":
                 case "WindSpeed":
                 case "RainRate":
+                case "WindGust":
                     return "SensorDescription - " + PropertyName;
 
                 case "SkyBrightness":
@@ -425,7 +427,6 @@ namespace ASCOM.VantagePro
                 case "StarFWHM":
                 case "SkyTemperature":
                 case "CloudCover":
-                case "WindGust":
                     throw new MethodNotImplementedException("SensorDescription(" + PropertyName + ")");
                 default:
                     throw new InvalidValueException("SensorDescription(" + PropertyName + ")");
@@ -506,7 +507,6 @@ namespace ASCOM.VantagePro
                 case "StarFWHM":
                 case "SkyTemperature":
                 case "CloudCover":
-                case "WindGust":
                     throw new MethodNotImplementedException("TimeSinceLastUpdate(" + PropertyName + ")");
             }
 
@@ -535,7 +535,7 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                throw new PropertyNotImplementedException("WindGust", false);
+                return fetcher.WindGust;
             }
         }
 

@@ -303,6 +303,29 @@ namespace ASCOM.VantagePro
 			}
 		}
 
+		public double WindGust
+		{
+			get
+			{
+				string property = "WindGustMps", key = "windGust";
+				double windGust = Double.NaN;
+
+				lock (sensorDataLock)
+				{
+					if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
+					{
+						#region trace
+						VantagePro.tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
+						#endregion
+						throw new PropertyNotImplementedException(property, false);
+					}
+					windGust = TryParseDouble_LocalThenEnUS(sensorData[key]);
+				}
+
+				return windGust;
+			}
+		}
+
 		public Dictionary<string, string> RawData
 		{
 			get

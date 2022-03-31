@@ -486,8 +486,9 @@ namespace ASCOM.VantagePro
         {
             get
             {
-                LogMessage("WindGust", "Get - not implemented");
-                return vantagePro.WindGust;
+                double windGust = vantagePro.WindGust;
+                LogMessage("WindGust", $"Get - {windGust}");
+                return windGust;
             }
         }
 

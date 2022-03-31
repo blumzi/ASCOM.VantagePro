@@ -132,6 +132,9 @@ namespace ASCOM.VantagePro
                 sensorData["windSpeed"] = util.ConvertUnits(buf[14], Units.milesPerHour, Units.metresPerSecond).ToString();
                 sensorData["windDir"] = GetUshort(buf, 16).ToString();
 
+                double gust = GetUshort(buf, 22);
+                sensorData["windGust"] = util.ConvertUnits(gust * 10.0, Units.milesPerHour, Units.metresPerSecond).ToString();
+
                 double RH = buf[33];
                 sensorData["outsideHumidity"] = RH.ToString();
 
