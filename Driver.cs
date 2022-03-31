@@ -82,6 +82,7 @@ namespace ASCOM.VantagePro
             vantagePro = VantagePro.Instance;
             vantagePro.ReadProfile();
 
+            tl.LogMessage("ObservingConditions", "=====");
             tl.LogMessage("ObservingConditions", "Completed initialisation");
         }
 
@@ -105,13 +106,19 @@ namespace ASCOM.VantagePro
             if (vantagePro.Connected)
                 System.Windows.Forms.MessageBox.Show("The driver is currently connected.\nDisconnect before changing settings!");
             else
-                using (SetupDialogForm F = new SetupDialogForm())
+                while (true)
                 {
-                    var result = F.ShowDialog();
-                    if (result == System.Windows.Forms.DialogResult.OK)
+                    using (SetupDialogForm F = new SetupDialogForm())
                     {
-                        WriteProfile(); // Persist device configuration values to the ASCOM Profile store
-                        ReadProfile();
+                        var result = F.ShowDialog();
+                        if (result == System.Windows.Forms.DialogResult.OK)
+                        {
+                            WriteProfile(); // Persist device configuration values to the ASCOM Profile store
+                            ReadProfile();
+                            break;
+                        }
+                        else if (result == System.Windows.Forms.DialogResult.Cancel)
+                            break;
                     }
                 }
         }

@@ -215,8 +215,7 @@ namespace ASCOM.VantagePro
             // openFileDialogReportFile
             // 
             this.openFileDialogReportFile.AddExtension = false;
-            this.openFileDialogReportFile.CheckFileExists = false;
-            this.openFileDialogReportFile.CheckPathExists = false;
+            this.openFileDialogReportFile.RestoreDirectory = true;
             this.openFileDialogReportFile.SupportMultiDottedExtensions = true;
             this.openFileDialogReportFile.Title = "Report file";
             this.openFileDialogReportFile.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialogReportFile_FileOk);

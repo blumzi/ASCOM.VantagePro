@@ -13,6 +13,8 @@ namespace ASCOM.VantagePro
         public const string Profile_SerialSpeed = "SerialSpeed";
         public const int defaultSpeed = 19200;
 
+        private string _stationModel = "Unknown";
+
         public string ComPort { get; set; }
         public int Speed { get; set; } = defaultSpeed;
 
@@ -140,14 +142,14 @@ namespace ASCOM.VantagePro
                     #region trace
                     VantagePro.LogMessage(op, $"Could not open {Source}");
                     #endregion
-                    return "Unknown";
+                    return _stationModel;
                 }
                 
                 Wakeup(serialPort);
                 serialPort.Write(GetStationTypeTxBytes, 0, GetStationTypeTxBytes.Length);
                 Thread.Sleep(500);
                 rxBytes = Encoding.ASCII.GetBytes(serialPort.ReadExisting());
-                serialPort.Close();
+                Close(serialPort);
 
                 #region trace
                 VantagePro.LogMessage(op, $"Got {ByteArrayToString(rxBytes)}");
@@ -156,6 +158,31 @@ namespace ASCOM.VantagePro
                     return "Unknown:";
                 return ByteToStationModel[rxBytes[1]];
             }
+
+            set
+            {
+                _stationModel = value;
+            }
+        }
+
+        private void Close(SerialPort serialPort)
+        {
+            string op = "SerialPortFetcher.Close";
+
+            #region trace
+            VantagePro.LogMessage(op, $"Closing {serialPort.PortName}");
+            #endregion
+            serialPort.Close();
+            while (serialPort.IsOpen)
+            {
+                #region trace
+                VantagePro.LogMessage(op, $"{serialPort.PortName}.IsOpen = {serialPort.IsOpen}");
+                Thread.Sleep(500);
+                #endregion
+            }
+            #region trace
+            VantagePro.LogMessage(op, "Closed");
+            #endregion
         }
 
         public override byte[] GetLoopDataBytes()
@@ -206,7 +233,7 @@ namespace ASCOM.VantagePro
             VantagePro.LogMessage(op, $"{Source}: Successfully read {rxBytes.Length} bytes");
             #endregion
 
-            serialPort.Close();
+            Close(serialPort);
             return rxBytes;
 
         BailOut:
@@ -215,7 +242,7 @@ namespace ASCOM.VantagePro
                  VantagePro.LogMessage(op, error);
             #endregion
             if (serialPort.IsOpen)
-                serialPort.Close();
+                Close(serialPort);
             return null;
         }
 

@@ -155,5 +155,14 @@ namespace ASCOM.VantagePro
 
         public abstract byte[] GetLoopDataBytes();
 
+        public override string StationName
+        {
+            get
+            {
+                return "Unknown";
+            }
+
+            set { }
+        }
     }
 }

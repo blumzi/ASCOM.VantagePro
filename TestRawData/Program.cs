@@ -11,7 +11,7 @@ namespace TestRawData
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main(string[] _)
         {
             ASCOM.DriverAccess.ObservingConditions device = new ASCOM.DriverAccess.ObservingConditions("ASCOM.VantagePro.ObservingConditions");
 

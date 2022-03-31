@@ -54,7 +54,7 @@ namespace ASCOM.VantagePro
                 if (System.IO.File.Exists(textBoxReportFile.Text))
                 {
                     VantagePro.OperationalMode = VantagePro.OpMode.File;
-                    fileFetcher.DataFile = textBoxReportFile.Text;
+                    FileFetcher.DataFile = textBoxReportFile.Text;
                 }
             }
             else if (radioButtonIP.Checked)
@@ -126,7 +126,7 @@ namespace ASCOM.VantagePro
                     break;
             }
 
-            textBoxReportFile.Text = fileFetcher.DataFile;
+            textBoxReportFile.Text = FileFetcher.DataFile;
             chkTrace.Checked = vantagePro.Tracing;
             labelTracePath.Text = chkTrace.Checked ? VantagePro.traceLogFile : "";
             textBoxIPAddress.Text = socketFetcher.Address;
@@ -135,9 +135,14 @@ namespace ASCOM.VantagePro
 
         private void buttonChooser_Click(object sender, EventArgs e)
         {
-              if (!string.IsNullOrEmpty(fileFetcher.DataFile))
-                openFileDialogReportFile.InitialDirectory = System.IO.Path.GetDirectoryName(fileFetcher.DataFile);
-            openFileDialogReportFile.ShowDialog();
+            if (!string.IsNullOrEmpty(FileFetcher.DataFile))
+                openFileDialogReportFile.InitialDirectory = System.IO.Path.GetDirectoryName(FileFetcher.DataFile);
+            var result = openFileDialogReportFile.ShowDialog(this);
+            if (result == DialogResult.OK)
+            {
+                FileFetcher.DataFile = openFileDialogReportFile.FileName;
+                textBoxReportFile.Text = FileFetcher.DataFile;
+            }
         }
 
         private void openFileDialogReportFile_FileOk(object sender, CancelEventArgs e)

@@ -14,6 +14,8 @@ namespace ASCOM.VantagePro
         public const string Profile_IPPort = "IPPort";
         public const ushort defaultPort = 22222;
 
+        private string _stationModel = "Unknown";
+
         public string Address { get; set; }
 		public UInt16 Port { get; set; } = defaultPort;
 
@@ -156,7 +158,7 @@ namespace ASCOM.VantagePro
                     #region trace
                      VantagePro.LogMessage(op, $"Got model: {model}");
                     #endregion
-                    return model;
+                    return _stationModel;
                 }
                 catch (Exception ex)
                 {
@@ -165,6 +167,11 @@ namespace ASCOM.VantagePro
                     #endregion
                     return null;
                 }
+            }
+
+            set
+            {
+                _stationModel = value;
             }
         }
 

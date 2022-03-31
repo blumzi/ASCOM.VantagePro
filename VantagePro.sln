@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestRawData", "TestRawData\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BuildVersion2DateTime", "..\BuildVersion2DateTime\BuildVersion2DateTime.csproj", "{271196AA-FF80-47C2-946F-959480B99C56}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestPeriodicReading", "..\TestPeriodicReading\TestPeriodicReading.csproj", "{E2B4783F-34D8-4F20-B740-8B302B83901A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{271196AA-FF80-47C2-946F-959480B99C56}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{271196AA-FF80-47C2-946F-959480B99C56}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{271196AA-FF80-47C2-946F-959480B99C56}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E2B4783F-34D8-4F20-B740-8B302B83901A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2B4783F-34D8-4F20-B740-8B302B83901A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2B4783F-34D8-4F20-B740-8B302B83901A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2B4783F-34D8-4F20-B740-8B302B83901A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

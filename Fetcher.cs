@@ -24,33 +24,33 @@ namespace ASCOM.VantagePro
 		protected const byte ACK = 0x06;
 
 		protected static Fetcher lowerFetcher;
-		//public static TraceLogger tl = VantagePro.tl;
 		protected string DriverId = VantagePro.DriverId;
 		public static Dictionary<string, string> sensorData = new Dictionary<string, string>();
 		protected static object sensorDataLock = new object();
 
 		private static void OnTimer(object state)
 		{
+			string op = "OnTimer";
+
 			try
 			{
+				#region trace
+				VantagePro.tl.LogMessage(op, $"Calling lowerFetcher");
+				#endregion
 				lowerFetcher.FetchSensorData();
 			}
 			catch (Exception ex)
 			{
 				#region trace
-				VantagePro.tl.LogMessage("OnTimer", $"Caught: {ex.Message}");
+				VantagePro.tl.LogMessage(op, $"Caught: {ex.Message}");
 				#endregion
 			}
 
-			System.Threading.Timer t = (System.Threading.Timer) state;
-			t.Change(Convert.ToInt32(VantagePro.interval.TotalMilliseconds), Timeout.Infinite);
+			System.Threading.Timer timer = (System.Threading.Timer) state;
+			timer.Change(Convert.ToInt32(VantagePro.interval.TotalMilliseconds), Timeout.Infinite);
 		}
 
 		private readonly System.Threading.Timer timer = new System.Threading.Timer(new TimerCallback(OnTimer));
-
-		public Fetcher()
-		{
-		}
 
 		public void Start()
 		{
@@ -73,9 +73,9 @@ namespace ASCOM.VantagePro
 
 		public abstract VantagePro.DataSourceClass DataSource { get; }
 
-		public abstract string StationType { get; }
+		public abstract string StationType { get; set; }
 
-		//public abstract byte[] ReadSensors();
+		public abstract string StationName { get; set;  }
 
 		public static readonly CultureInfo en_US = CultureInfo.CreateSpecificCulture("en-US");
 		public double TryParseDouble_LocalThenEnUS(string str)
