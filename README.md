@@ -66,3 +66,6 @@ The driver supports the following actions:
 
 * _**`raw-data`** (no parameters)_: produces a *JSON* string containing all the raw data gathered from the weather station.
 * _**`OCHTag`** (no-parameters)_: produces a tag which can be used by the _**ASCOM OCH**_ (*Observing Conditions Hub*) to redirect actions to this specific driver.
+
+## Assets
+* [v1.2 x64](https://github.com/blumzi/ASCOM.VantagePro/blob/master/Solution%20Items/VantagePro%20Setup%201.2.exe) 
