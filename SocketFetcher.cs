@@ -112,6 +112,8 @@ namespace ASCOM.VantagePro
             Byte[] rxBytes = new byte[2];
             int nRxBytes, attempt, maxAttempts = 3;
 
+            if (!socket.Connected) return false;
+
             for (attempt = 0; attempt < maxAttempts; attempt++)
             {
                 socket.Send(Encoding.ASCII.GetBytes("\r"), 1, 0);
@@ -185,7 +187,7 @@ namespace ASCOM.VantagePro
             for (tries = 0; tries < 10; tries++)
             {
                 socket = Open();
-                if (socket == null)
+                if (socket == null || !socket.Connected)
                 {
                     VantagePro.LogMessage(op, $"try#{tries}: Could not Open {DataSource}");
                     Thread.Sleep(500);
@@ -204,7 +206,7 @@ namespace ASCOM.VantagePro
                     break;
             }
 
-            if (socket == null)
+            if (socket == null || !socket.Connected)
             {
                 error = $"Could not open and wakeup {DataSource} after {tries} tries.";
                 goto BailOut;
@@ -243,7 +245,7 @@ namespace ASCOM.VantagePro
             }
             #endregion
 
-            if (socket != null)
+            if (socket != null && socket.Connected)
                 socket.Close();
             return null;
         }

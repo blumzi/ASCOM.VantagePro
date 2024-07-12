@@ -69,6 +69,14 @@ namespace ASCOM.VantagePro
             #endregion
             byte[] rxBytes = GetLoopDataBytes();
 
+            if (rxBytes == null)
+            {
+                #region trace
+                VantagePro.LogMessage(op, $"{DataSource}: Could not get LOOP bytes");
+                #endregion
+                return;
+            }
+
             if (!CalculateCRC(rxBytes))
             {
                 #region trace
