@@ -62,7 +62,13 @@ namespace ASCOM.VantagePro
             try
             {
                 IPAddress.TryParse(Address, out IPAddress addr);
+                #region trace
+                VantagePro.LogMessage(op, $"Open: Address: '{Address}', addr: '{addr}'");
+                #endregion
                 IPEndPoint ipe = new IPEndPoint(addr, Port);
+                #region trace
+                VantagePro.LogMessage(op, $"Open: ipe: '{ipe}'");
+                #endregion
                 socket = new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 #region trace
                  VantagePro.LogMessage(op, $"Connecting to {Source}");
@@ -160,6 +166,7 @@ namespace ASCOM.VantagePro
                     #region trace
                      VantagePro.LogMessage(op, $"Got model: {model}");
                     #endregion
+                    _stationModel = model;
                     return _stationModel;
                 }
                 catch (Exception ex)
@@ -184,7 +191,7 @@ namespace ASCOM.VantagePro
             Socket socket = null;
             int tries;
 
-            for (tries = 0; tries < 10; tries++)
+            for (tries = 0; tries < 3; tries++)
             {
                 socket = Open();
                 if (socket == null || !socket.Connected)
