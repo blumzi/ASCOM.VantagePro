@@ -61,6 +61,9 @@ namespace ASCOM.VantagePro
 
             try
             {
+                if (Address == null || Address == "")
+                    throw new InvalidValueException("empty address");
+
                 IPAddress.TryParse(Address, out IPAddress addr);
                 #region trace
                 VantagePro.LogMessage(op, $"Open: Address: '{Address}', addr: '{addr}'");
@@ -118,7 +121,7 @@ namespace ASCOM.VantagePro
             Byte[] rxBytes = new byte[2];
             int nRxBytes, attempt, maxAttempts = 3;
 
-            if (!socket.Connected) return false;
+            if (socket == null || !socket.Connected) return false;
 
             for (attempt = 0; attempt < maxAttempts; attempt++)
             {
@@ -191,7 +194,7 @@ namespace ASCOM.VantagePro
             Socket socket = null;
             int tries;
 
-            for (tries = 0; tries < 3; tries++)
+            for (tries = 0; tries < 1; tries++)
             {
                 socket = Open();
                 if (socket == null || !socket.Connected)

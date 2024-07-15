@@ -271,8 +271,9 @@ namespace ASCOM.VantagePro
                 {
                     if (fetcher != null)
                     {
-                        fetcher.FetchSensorData();
-                        info += $"Model: {fetcher.StationModel}, name: \"{fetcher.StationName}\", source: {fetcher.DataSource}";
+                        //fetcher.FetchSensorData();
+                        //info += $"Model: {fetcher.StationModel}, name: \"{fetcher.StationName}\", source: {fetcher.DataSource}";
+                        info += $"StationName: \"{fetcher.StationName}\", Source: {fetcher.DataSource}";
                     }
                 }
 
@@ -324,7 +325,8 @@ namespace ASCOM.VantagePro
                 driverProfile.WriteValue(DriverId, Profile_OpMode, OperationalMode.ToString());
                 driverProfile.WriteValue(DriverId, Profile_Tracing, Tracing.ToString());
                 driverProfile.WriteValue(DriverId, Profile_Interval, interval.TotalSeconds.ToString());
-                fetcher.WriteProfile();
+                if (fetcher != null)
+                    fetcher.WriteProfile();
             }
         }
 

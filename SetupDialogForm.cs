@@ -27,6 +27,9 @@ namespace ASCOM.VantagePro
             fileFetcher = new FileFetcher();
 
             vantagePro.ReadProfile();
+            serialPortFetcher.ReadLowerProfile();
+            socketFetcher.ReadLowerProfile();
+            fileFetcher.ReadLowerProfile();
 
             InitializeComponent();
             // Initialise current values of user settings from the ASCOM Profile
@@ -37,35 +40,29 @@ namespace ASCOM.VantagePro
 
         private void cmdOK_Click(object sender, EventArgs e) // OK button event handler
         {
-            if (radioButtonSerialPort.Checked)
-            {
-                string[] ports = System.IO.Ports.SerialPort.GetPortNames();
-                List<string> portsList = new List<string>(ports);
-                string selectedComPort = (string)comboBoxComPort.SelectedItem;
+            string[] ports = System.IO.Ports.SerialPort.GetPortNames();
+            List<string> portsList = new List<string>(ports);
+            string selectedComPort = (string)comboBoxComPort.SelectedItem;
 
-                if (portsList.Contains(selectedComPort))
-                {
-                    VantagePro.OperationalMode = VantagePro.OpMode.Serial;
-                    serialPortFetcher.ComPort = selectedComPort;
-                }
+            if (portsList.Contains(selectedComPort)) {
+                serialPortFetcher.ComPort = selectedComPort;
             }
-            else if (radioButtonReportFile.Checked)
-            {
-                if (System.IO.File.Exists(textBoxReportFile.Text))
-                {
-                    VantagePro.OperationalMode = VantagePro.OpMode.File;
-                    FileFetcher.DataFile = textBoxReportFile.Text;
-                }
+
+            if (System.IO.File.Exists(textBoxReportFile.Text)) {
+                FileFetcher.DataFile = textBoxReportFile.Text;
             }
-            else if (radioButtonIP.Checked)
-            {
-                VantagePro.OperationalMode = VantagePro.OpMode.IP;
-                socketFetcher.Address = textBoxIPAddress.Text;
-            }
-            else if (radioButtonNone.Checked)
-            {
+
+            socketFetcher.Address = textBoxIPAddress.Text;
+
+
+            if (radioButtonNone.Checked)
                 VantagePro.OperationalMode = VantagePro.OpMode.None;
-            }
+            else if (radioButtonIP.Checked)
+                VantagePro.OperationalMode = VantagePro.OpMode.IP;
+            else if (radioButtonReportFile.Checked)
+                VantagePro.OperationalMode = VantagePro.OpMode.File;
+            else if (radioButtonSerialPort.Checked)
+                VantagePro.OperationalMode = VantagePro.OpMode.Serial;
 
             vantagePro.Tracing = ObservingConditions.tl.Enabled = chkTrace.Checked;
             VantagePro.interval = TimeSpan.FromSeconds(Convert.ToInt32(textBoxInterval.Text));
