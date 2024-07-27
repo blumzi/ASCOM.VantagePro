@@ -32,8 +32,12 @@ namespace ASCOM.VantagePro
         {
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
+                string op = "ReadLowerProfile";
                 Address = driverProfile.GetValue(DriverId, Profile_IPAddress, string.Empty, "");
                 Port = Convert.ToUInt16(driverProfile.GetValue(DriverId, Profile_IPPort, string.Empty, defaultPort.ToString()));
+                #region trace
+                VantagePro.LogMessage(op, $"Address: '{Address}', Port: '{Port}'");
+                #endregion
             }
         }
 
@@ -41,8 +45,13 @@ namespace ASCOM.VantagePro
         {
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
+                string op = "WriteLowerProfile";
+
                 driverProfile.WriteValue(DriverId, Profile_IPAddress, Address);
                 driverProfile.WriteValue(DriverId, Profile_IPPort, Port.ToString());
+                #region trace
+                VantagePro.LogMessage(op, $"Address: '{Address}', Port: '{Port}'");
+                #endregion
             }
         }
 
@@ -65,23 +74,34 @@ namespace ASCOM.VantagePro
                     throw new InvalidValueException("empty address");
 
                 IPAddress.TryParse(Address, out IPAddress addr);
-                #region trace
-                VantagePro.LogMessage(op, $"Open: Address: '{Address}', addr: '{addr}'");
-                #endregion
                 IPEndPoint ipe = new IPEndPoint(addr, Port);
                 #region trace
                 VantagePro.LogMessage(op, $"Open: ipe: '{ipe}'");
                 #endregion
                 socket = new Socket(ipe.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 #region trace
-                 VantagePro.LogMessage(op, $"Connecting to {Source}");
+                 VantagePro.LogMessage(op, $"Connecting to {ipe}");
                 #endregion
-                socket.Connect(ipe);
+                try
+                {
+                    socket.Connect(ipe);
+                }
+                catch (Exception ex)
+                {
+                    #region trace
+                    VantagePro.LogMessage(op, $"Caught: {ex.Message} at {ex.StackTrace}");
+                    #endregion
+                }
 
                 if (socket.Connected)
                 {
                     #region trace
-                     VantagePro.LogMessage(op, $"Connected to {Source}");
+                     VantagePro.LogMessage(op, $"Connected to {ipe}");
+                    #endregion
+                } else
+                {
+                    #region trace
+                    VantagePro.LogMessage(op, $"Could not connect to {ipe}");
                     #endregion
                 }
             }

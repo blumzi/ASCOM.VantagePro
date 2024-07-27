@@ -14,10 +14,10 @@ namespace ASCOM.VantagePro
 
     public partial class SetupDialogForm : Form
     {
-        private readonly VantagePro vantagePro;
-        private readonly SerialPortFetcher serialPortFetcher;
-        private readonly SocketFetcher socketFetcher;
-        private readonly FileFetcher fileFetcher;
+        private VantagePro vantagePro;
+        private SerialPortFetcher serialPortFetcher;
+        private SocketFetcher socketFetcher;
+        private FileFetcher fileFetcher;
 
         public SetupDialogForm()
         {
@@ -53,6 +53,7 @@ namespace ASCOM.VantagePro
             }
 
             socketFetcher.Address = textBoxIPAddress.Text;
+            socketFetcher.Port = Convert.ToUInt16(textBoxIPPort.Text);
 
 
             if (radioButtonNone.Checked)
@@ -71,6 +72,11 @@ namespace ASCOM.VantagePro
             fileFetcher.WriteLowerProfile();
             socketFetcher.WriteLowerProfile();
             serialPortFetcher.WriteLowerProfile();
+
+            serialPortFetcher = null;
+            socketFetcher = null;
+            fileFetcher = null;
+            vantagePro = null;
         }
 
         private void cmdCancel_Click(object sender, EventArgs e) // Cancel button event handler
@@ -214,7 +220,7 @@ namespace ASCOM.VantagePro
             }
             else if (radioButtonIP.Checked)
             {
-                socketFetcher.Test(textBoxIPAddress.Text, SocketFetcher.defaultPort.ToString(), ref result, ref resultColor);
+                socketFetcher.Test(textBoxIPAddress.Text, textBoxIPPort.Text, ref result, ref resultColor);
             }
 
             if (resultColor == VantagePro.colorGood)
