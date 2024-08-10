@@ -320,9 +320,12 @@ namespace ASCOM.VantagePro
 						throw new PropertyNotImplementedException(property, false);
 					}
 					windGust = TryParseDouble_LocalThenEnUS(sensorData[key]);
+					#region trace
+					VantagePro.tl.LogMessage(property, $"windGust: sensorData[\"{key}\"]: {sensorData[key]} => {windGust}");
+					#endregion
 				}
 
-				return windGust;
+                return windGust;
 			}
 		}
 

@@ -137,14 +137,33 @@ namespace ASCOM.VantagePro
             {
                 double F = GetUshort(buf, 12) / 10.0;
                 sensorData["outsideTemp"] = util.ConvertUnits(F, Units.degreesFahrenheit, Units.degreesCelsius).ToString();
-                sensorData["windSpeed"] = util.ConvertUnits(buf[14], Units.milesPerHour, Units.metresPerSecond).ToString();
-                sensorData["windDir"] = GetUshort(buf, 16).ToString();
+                #region trace
+                VantagePro.tl.LogMessage("outsideTemp", $"Fahrenheit: {F} ->  sensorData[\"outsideTemp\"]: {sensorData["outsideTemp"]} (Celsius)");
+                #endregion
+
+                double mph = buf[14];
+                sensorData["windSpeed"] = util.ConvertUnits(mph, Units.milesPerHour, Units.metresPerSecond).ToString();
+                #region trace
+                VantagePro.tl.LogMessage("windSpeed", $"mph: {mph} ->  sensorData[\"windSpeed\"]: {sensorData["windSpeed"]} (m/s)");
+                #endregion
+
+                double dir = GetUshort(buf, 16);
+                sensorData["windDir"] = dir.ToString();
+                #region trace
+                VantagePro.tl.LogMessage("windDir", $"dir: {dir} ->  sensorData[\"windDir\"]: {sensorData["windDir"]} (deg)");
+                #endregion
 
                 double gust = GetUshort(buf, 22);
                 sensorData["windGust"] = util.ConvertUnits(gust * 10.0, Units.milesPerHour, Units.metresPerSecond).ToString();
+                #region trace
+                VantagePro.tl.LogMessage("windGust", $"gust: {gust} ->  sensorData[\"windGust\"]: {sensorData["windGust"]}");
+                #endregion
 
                 double RH = buf[33];
                 sensorData["outsideHumidity"] = RH.ToString();
+                #region trace
+                VantagePro.tl.LogMessage("outsideHumidity", $"dir: {dir} ->  sensorData[\"outsideHumidity\"]: {sensorData["outsideHumidity"]} (deg)");
+                #endregion
 
                 double P = GetUshort(buf, 7);
                 sensorData["barometer"] = (util.ConvertUnits(P, Units.inHg, Units.hPa) / 1000).ToString();
