@@ -54,6 +54,9 @@ namespace ASCOM.VantagePro
             this.labelRefreshInterval = new System.Windows.Forms.Label();
             this.textBoxInterval = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
+            this.label7 = new System.Windows.Forms.Label();
+            this.radioButtonIPProtocolSerial = new System.Windows.Forms.RadioButton();
+            this.radioButtonIPProtocolJson = new System.Windows.Forms.RadioButton();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.picASCOM)).BeginInit();
             this.groupBoxOpMode.SuspendLayout();
@@ -64,7 +67,7 @@ namespace ASCOM.VantagePro
             this.cmdOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdOK.CausesValidation = false;
             this.cmdOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.cmdOK.Location = new System.Drawing.Point(536, 193);
+            this.cmdOK.Location = new System.Drawing.Point(536, 219);
             this.cmdOK.Name = "cmdOK";
             this.cmdOK.Size = new System.Drawing.Size(59, 24);
             this.cmdOK.TabIndex = 0;
@@ -76,7 +79,7 @@ namespace ASCOM.VantagePro
             // 
             this.cmdCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.cmdCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.cmdCancel.Location = new System.Drawing.Point(536, 229);
+            this.cmdCancel.Location = new System.Drawing.Point(536, 255);
             this.cmdCancel.Name = "cmdCancel";
             this.cmdCancel.Size = new System.Drawing.Size(59, 25);
             this.cmdCancel.TabIndex = 1;
@@ -121,7 +124,7 @@ namespace ASCOM.VantagePro
             // chkTrace
             // 
             this.chkTrace.AutoSize = true;
-            this.chkTrace.Location = new System.Drawing.Point(41, 234);
+            this.chkTrace.Location = new System.Drawing.Point(41, 260);
             this.chkTrace.Name = "chkTrace";
             this.chkTrace.Size = new System.Drawing.Size(69, 17);
             this.chkTrace.TabIndex = 6;
@@ -268,14 +271,14 @@ namespace ASCOM.VantagePro
             // 
             // labelTracePath
             // 
-            this.labelTracePath.Location = new System.Drawing.Point(116, 235);
+            this.labelTracePath.Location = new System.Drawing.Point(116, 261);
             this.labelTracePath.Name = "labelTracePath";
             this.labelTracePath.Size = new System.Drawing.Size(419, 16);
             this.labelTracePath.TabIndex = 19;
             // 
             // buttonTest
             // 
-            this.buttonTest.Location = new System.Drawing.Point(364, 195);
+            this.buttonTest.Location = new System.Drawing.Point(364, 221);
             this.buttonTest.Name = "buttonTest";
             this.buttonTest.Size = new System.Drawing.Size(114, 23);
             this.buttonTest.TabIndex = 20;
@@ -285,7 +288,7 @@ namespace ASCOM.VantagePro
             // 
             // labelRefreshInterval
             // 
-            this.labelRefreshInterval.Location = new System.Drawing.Point(148, 200);
+            this.labelRefreshInterval.Location = new System.Drawing.Point(148, 226);
             this.labelRefreshInterval.Name = "labelRefreshInterval";
             this.labelRefreshInterval.Size = new System.Drawing.Size(52, 13);
             this.labelRefreshInterval.TabIndex = 21;
@@ -294,7 +297,7 @@ namespace ASCOM.VantagePro
             // 
             // textBoxInterval
             // 
-            this.textBoxInterval.Location = new System.Drawing.Point(209, 196);
+            this.textBoxInterval.Location = new System.Drawing.Point(209, 222);
             this.textBoxInterval.Name = "textBoxInterval";
             this.textBoxInterval.Size = new System.Drawing.Size(29, 20);
             this.textBoxInterval.TabIndex = 22;
@@ -303,17 +306,53 @@ namespace ASCOM.VantagePro
             // label6
             // 
             this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(242, 200);
+            this.label6.Location = new System.Drawing.Point(242, 226);
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(47, 13);
             this.label6.TabIndex = 23;
             this.label6.Text = "seconds";
-            // 
+            //
+            // label7
+            //
+            this.label7.AutoSize = true;
+            this.label7.Location = new System.Drawing.Point(145, 186);
+            this.label7.Name = "label7";
+            this.label7.Size = new System.Drawing.Size(48, 13);
+            this.label7.TabIndex = 24;
+            this.label7.Text = "Protocol";
+            //
+            // radioButtonIPProtocolSerial
+            //
+            this.radioButtonIPProtocolSerial.AutoSize = true;
+            this.radioButtonIPProtocolSerial.Checked = true;
+            this.radioButtonIPProtocolSerial.Location = new System.Drawing.Point(209, 184);
+            this.radioButtonIPProtocolSerial.Name = "radioButtonIPProtocolSerial";
+            this.radioButtonIPProtocolSerial.Size = new System.Drawing.Size(96, 17);
+            this.radioButtonIPProtocolSerial.TabIndex = 25;
+            this.radioButtonIPProtocolSerial.TabStop = true;
+            this.radioButtonIPProtocolSerial.Text = "Legacy (22222)";
+            this.radioButtonIPProtocolSerial.UseVisualStyleBackColor = true;
+            this.radioButtonIPProtocolSerial.CheckedChanged += new System.EventHandler(this.radioButtonIPProtocolSerial_CheckedChanged);
+            //
+            // radioButtonIPProtocolJson
+            //
+            this.radioButtonIPProtocolJson.AutoSize = true;
+            this.radioButtonIPProtocolJson.Location = new System.Drawing.Point(340, 184);
+            this.radioButtonIPProtocolJson.Name = "radioButtonIPProtocolJson";
+            this.radioButtonIPProtocolJson.Size = new System.Drawing.Size(160, 17);
+            this.radioButtonIPProtocolJson.TabIndex = 26;
+            this.radioButtonIPProtocolJson.Text = "WeatherLink Live (JSON, 80)";
+            this.radioButtonIPProtocolJson.UseVisualStyleBackColor = true;
+            this.radioButtonIPProtocolJson.CheckedChanged += new System.EventHandler(this.radioButtonIPProtocolJson_CheckedChanged);
+            //
             // SetupDialogForm
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(607, 270);
+            this.ClientSize = new System.Drawing.Size(607, 296);
+            this.Controls.Add(this.radioButtonIPProtocolJson);
+            this.Controls.Add(this.radioButtonIPProtocolSerial);
+            this.Controls.Add(this.label7);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.textBoxInterval);
             this.Controls.Add(this.labelRefreshInterval);
@@ -377,5 +416,8 @@ namespace ASCOM.VantagePro
         private System.Windows.Forms.TextBox textBoxInterval;
         private System.Windows.Forms.ToolTip toolTip1;
         private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Label label7;
+        private System.Windows.Forms.RadioButton radioButtonIPProtocolSerial;
+        private System.Windows.Forms.RadioButton radioButtonIPProtocolJson;
     }
 }

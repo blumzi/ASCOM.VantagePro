@@ -21,6 +21,16 @@ namespace ASCOM.VantagePro
     public class VantagePro: WeatherStation
     {
         public enum OpMode { None, File, Serial, IP };
+
+        /// <summary>
+        /// Which wire protocol to speak when OperationalMode is OpMode.IP: the
+        /// legacy binary WeatherLinkIP protocol (wakeup/WRD/LOOP over a raw
+        /// socket, port 22222) that a standalone WeatherLinkIP data logger or
+        /// some consoles speak, or the modern WeatherLink Live local JSON API
+        /// (GET /v1/current_conditions, port 80) that the WeatherLink Live hub
+        /// speaks instead.
+        /// </summary>
+        public enum IPProtocolMode { Serial, Json };
         public static TimeSpan interval;
         public static Color colorGood = Color.Green;
         public static Color colorWarning = Color.Yellow;
@@ -29,6 +39,7 @@ namespace ASCOM.VantagePro
         private bool _initialized = false;
         private bool _connected = false;
         private static OpMode _opMode = OpMode.None;
+        private static IPProtocolMode _ipProtocol = IPProtocolMode.Serial;
 
         private static Fetcher fetcher;
 
@@ -61,9 +72,10 @@ namespace ASCOM.VantagePro
             }
         }
 
-        public static string Profile_OpMode   = "OperationMode";
-        public static string Profile_Tracing  = "Tracing";
-        public static string Profile_Interval = "IntervalSeconds";
+        public static string Profile_OpMode    = "OperationMode";
+        public static string Profile_Tracing   = "Tracing";
+        public static string Profile_Interval  = "IntervalSeconds";
+        public static string Profile_IPProtocol = "IPProtocol";
 
         public static VantagePro Instance
         {
@@ -107,11 +119,38 @@ namespace ASCOM.VantagePro
                         fetcher = new SerialPortFetcher();
                         break;
                     case OpMode.IP:
-                        fetcher = new SocketFetcher();
+                        fetcher = NewIPFetcher();
                         break;
 
                 }
             }
+        }
+
+        /// <summary>
+        /// Which wire protocol OpMode.IP should speak. Setting this when the
+        /// operational mode is already IP swaps the live fetcher immediately
+        /// (mirrors OperationalMode's own setter), so flipping this in the
+        /// Setup dialog and clicking "Test configuration" reflects the choice
+        /// right away without requiring a full reconnect.
+        /// </summary>
+        public static IPProtocolMode IPProtocol
+        {
+            get
+            {
+                return _ipProtocol;
+            }
+
+            set
+            {
+                _ipProtocol = value;
+                if (_opMode == OpMode.IP)
+                    fetcher = NewIPFetcher();
+            }
+        }
+
+        private static Fetcher NewIPFetcher()
+        {
+            return (_ipProtocol == IPProtocolMode.Json) ? (Fetcher)new WeatherLinkLiveFetcher() : new SocketFetcher();
         }
 
         public bool Tracing {
@@ -171,7 +210,7 @@ namespace ASCOM.VantagePro
                     break;
 
                 case OpMode.IP:
-                    fetcher = new SocketFetcher();
+                    fetcher = NewIPFetcher();
                     break;
             }
 
@@ -307,6 +346,9 @@ namespace ASCOM.VantagePro
         {
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
+                Enum.TryParse<IPProtocolMode>(driverProfile.GetValue(DriverId, Profile_IPProtocol, string.Empty, IPProtocolMode.Serial.ToString()), out IPProtocolMode ipProtocol);
+                _ipProtocol = ipProtocol;
+
                 Enum.TryParse<OpMode>(driverProfile.GetValue(DriverId, Profile_OpMode, string.Empty, OpMode.None.ToString()), out OpMode mode);
                 OperationalMode = mode;
 
@@ -323,6 +365,7 @@ namespace ASCOM.VantagePro
             using (Profile driverProfile = new Profile() { DeviceType = "ObservingConditions" })
             {
                 driverProfile.WriteValue(DriverId, Profile_OpMode, OperationalMode.ToString());
+                driverProfile.WriteValue(DriverId, Profile_IPProtocol, IPProtocol.ToString());
                 driverProfile.WriteValue(DriverId, Profile_Tracing, Tracing.ToString());
                 driverProfile.WriteValue(DriverId, Profile_Interval, interval.TotalSeconds.ToString());
                 if (fetcher != null)
@@ -610,6 +653,8 @@ namespace ASCOM.VantagePro
         {
             get
             {
+                if (VantagePro.OperationalMode == OpMode.IP && VantagePro.IPProtocol == IPProtocolMode.Json)
+                    return WeatherStationInputMethod.WeatherLink_LiveJson;
                 return opMode2InputMethod[VantagePro.OperationalMode];
             }
 

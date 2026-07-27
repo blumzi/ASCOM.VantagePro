@@ -17,6 +17,7 @@ namespace ASCOM.VantagePro
         private VantagePro vantagePro;
         private SerialPortFetcher serialPortFetcher;
         private SocketFetcher socketFetcher;
+        private WeatherLinkLiveFetcher weatherLinkLiveFetcher;
         private FileFetcher fileFetcher;
 
         public SetupDialogForm()
@@ -24,11 +25,13 @@ namespace ASCOM.VantagePro
             vantagePro = new VantagePro();
             serialPortFetcher = new SerialPortFetcher();
             socketFetcher = new SocketFetcher();
+            weatherLinkLiveFetcher = new WeatherLinkLiveFetcher();
             fileFetcher = new FileFetcher();
 
             vantagePro.ReadProfile();
             serialPortFetcher.ReadLowerProfile();
             socketFetcher.ReadLowerProfile();
+            weatherLinkLiveFetcher.ReadLowerProfile();
             fileFetcher.ReadLowerProfile();
 
             InitializeComponent();
@@ -52,9 +55,21 @@ namespace ASCOM.VantagePro
                 FileFetcher.DataFile = textBoxReportFile.Text;
             }
 
+            ushort ipPort;
+            try
+            {
+                ipPort = Convert.ToUInt16(textBoxIPPort.Text);
+            }
+            catch
+            {
+                ipPort = radioButtonIPProtocolJson.Checked ? WeatherLinkLiveFetcher.defaultPort : SocketFetcher.defaultPort;
+            }
             socketFetcher.Address = textBoxIPAddress.Text;
-            socketFetcher.Port = Convert.ToUInt16(textBoxIPPort.Text);
+            socketFetcher.Port = ipPort;
+            weatherLinkLiveFetcher.Address = textBoxIPAddress.Text;
+            weatherLinkLiveFetcher.Port = ipPort;
 
+            VantagePro.IPProtocol = radioButtonIPProtocolJson.Checked ? VantagePro.IPProtocolMode.Json : VantagePro.IPProtocolMode.Serial;
 
             if (radioButtonNone.Checked)
                 VantagePro.OperationalMode = VantagePro.OpMode.None;
@@ -71,6 +86,7 @@ namespace ASCOM.VantagePro
             vantagePro.WriteProfile();
             fileFetcher.WriteLowerProfile();
             socketFetcher.WriteLowerProfile();
+            weatherLinkLiveFetcher.WriteLowerProfile();
             serialPortFetcher.WriteLowerProfile();
 
             serialPortFetcher = null;
@@ -134,6 +150,17 @@ namespace ASCOM.VantagePro
             labelTracePath.Text = chkTrace.Checked ? VantagePro.traceLogFile : "";
             textBoxIPAddress.Text = socketFetcher.Address;
             textBoxInterval.Text = Convert.ToInt32(VantagePro.interval.TotalSeconds).ToString();
+
+            if (VantagePro.IPProtocol == VantagePro.IPProtocolMode.Json)
+            {
+                textBoxIPPort.Text = weatherLinkLiveFetcher.Port.ToString();
+                radioButtonIPProtocolJson.Checked = true;
+            }
+            else
+            {
+                textBoxIPPort.Text = socketFetcher.Port.ToString();
+                radioButtonIPProtocolSerial.Checked = true;
+            }
         }
 
         private void buttonChooser_Click(object sender, EventArgs e)
@@ -159,7 +186,7 @@ namespace ASCOM.VantagePro
             {
                 foreach (var control in new List<Control> { textBoxReportFile, buttonChooser })
                     control.Enabled = true;
-                foreach (var control in new List<Control> { comboBoxComPort, textBoxIPAddress, textBoxIPPort })
+                foreach (var control in new List<Control> { comboBoxComPort, textBoxIPAddress, textBoxIPPort, radioButtonIPProtocolSerial, radioButtonIPProtocolJson })
                     control.Enabled = false;
             }
         }
@@ -170,7 +197,7 @@ namespace ASCOM.VantagePro
             {
                 foreach (var control in new List<Control> { comboBoxComPort })
                     control.Enabled = true;
-                foreach (var control in new List<Control> { textBoxReportFile, buttonChooser, textBoxIPAddress, textBoxIPPort })
+                foreach (var control in new List<Control> { textBoxReportFile, buttonChooser, textBoxIPAddress, textBoxIPPort, radioButtonIPProtocolSerial, radioButtonIPProtocolJson })
                     control.Enabled = false;
             }
         }
@@ -179,7 +206,7 @@ namespace ASCOM.VantagePro
         {
             if ((sender as RadioButton).Checked)
             {
-                foreach (var control in new List<Control> { textBoxIPAddress, textBoxIPPort })
+                foreach (var control in new List<Control> { textBoxIPAddress, textBoxIPPort, radioButtonIPProtocolSerial, radioButtonIPProtocolJson })
                     control.Enabled = true;
                 foreach (var control in new List<Control> { comboBoxComPort, textBoxReportFile, buttonChooser })
                     control.Enabled = false;
@@ -188,8 +215,23 @@ namespace ASCOM.VantagePro
 
         private void radioButtonNone_CheckedChanged(object sender, EventArgs e)
         {
-            foreach (var control in new List<Control> { textBoxIPAddress, textBoxIPPort, comboBoxComPort, textBoxReportFile, buttonChooser })
+            foreach (var control in new List<Control> { textBoxIPAddress, textBoxIPPort, radioButtonIPProtocolSerial, radioButtonIPProtocolJson, comboBoxComPort, textBoxReportFile, buttonChooser })
                 control.Enabled = false;
+        }
+
+        private void radioButtonIPProtocolSerial_CheckedChanged(object sender, EventArgs e)
+        {
+            // Swap the displayed port to the other protocol's default, but
+            // only if the user hasn't already typed something of their own --
+            // don't clobber a deliberately-chosen non-default port.
+            if ((sender as RadioButton).Checked && textBoxIPPort.Text == WeatherLinkLiveFetcher.defaultPort.ToString())
+                textBoxIPPort.Text = SocketFetcher.defaultPort.ToString();
+        }
+
+        private void radioButtonIPProtocolJson_CheckedChanged(object sender, EventArgs e)
+        {
+            if ((sender as RadioButton).Checked && textBoxIPPort.Text == SocketFetcher.defaultPort.ToString())
+                textBoxIPPort.Text = WeatherLinkLiveFetcher.defaultPort.ToString();
         }
 
         private void chkTrace_CheckedChanged(object sender, EventArgs e)
@@ -217,6 +259,10 @@ namespace ASCOM.VantagePro
             else if (radioButtonSerialPort.Checked)
             {
                 serialPortFetcher.Test(comboBoxComPort.Text, ref result, ref resultColor);
+            }
+            else if (radioButtonIP.Checked && radioButtonIPProtocolJson.Checked)
+            {
+                weatherLinkLiveFetcher.Test(textBoxIPAddress.Text, textBoxIPPort.Text, ref result, ref resultColor);
             }
             else if (radioButtonIP.Checked)
             {

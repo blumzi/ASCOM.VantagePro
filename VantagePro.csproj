@@ -110,6 +110,8 @@
     <Compile Include="SocketFetcher.cs" />
     <Compile Include="VantagePro.cs" />
     <Compile Include="Weather.cs" />
+    <Compile Include="WeatherLinkLiveFetcher.cs" />
+    <Compile Include="WeatherLinkLiveParser.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\Resources.resx">

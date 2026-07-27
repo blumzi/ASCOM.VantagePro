@@ -52,9 +52,37 @@ namespace ASCOM.VantagePro
 
 		private readonly System.Threading.Timer timer = new System.Threading.Timer(new TimerCallback(OnTimer));
 
+		/// <summary>
+		/// Fetches once synchronously before scheduling the recurring async
+		/// timer. Without this, Connected=true returned control to the caller
+		/// immediately while the first fetch was still in flight on the
+		/// timer's thread pool thread -- a client reading any property in the
+		/// same breath as setting Connected (as MaximDL does) would hit
+		/// PropertyNotImplementedException on every single one, since
+		/// sensorData was still empty. This also matches Refresh()'s own
+		/// documented contract ("forces the driver to immediately query its
+		/// attached hardware"), which previously just restarted the async
+		/// timer without actually blocking for a fresh read.
+		/// </summary>
 		public void Start()
 		{
-			timer.Change(Convert.ToInt32(0), Timeout.Infinite);
+			string op = "Start";
+
+			try
+			{
+				#region trace
+				VantagePro.tl.LogMessage(op, "Calling lowerFetcher synchronously before starting the timer");
+				#endregion
+				lowerFetcher.FetchSensorData();
+			}
+			catch (Exception ex)
+			{
+				#region trace
+				VantagePro.tl.LogMessage(op, $"Caught: {ex.Message}");
+				#endregion
+			}
+
+			timer.Change(Convert.ToInt32(VantagePro.interval.TotalMilliseconds), Timeout.Infinite);
 		}
 
 		public void Stop()
@@ -149,7 +177,7 @@ namespace ASCOM.VantagePro
 					if (!sensorData.ContainsKey(key) || string.IsNullOrEmpty(sensorData[key]))
 					{
 						#region trace
-						VantagePro.tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{property}\"]");
+						VantagePro.tl.LogMessage(property, $"NullOrEmpty: sensorData[\"{key}\"]");
 						#endregion
 						throw new PropertyNotImplementedException(property, false);
 					}

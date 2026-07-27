@@ -16,6 +16,7 @@ namespace Weather
             WeatherLink_HtmlReport,
             WeatherLink_Serial,
             WeatherLink_IP,
+            WeatherLink_LiveJson,
             TessW,
         };
 

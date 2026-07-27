@@ -159,13 +159,15 @@ namespace ASCOM.VantagePro
 
         protected virtual void Dispose(bool dispozing)
         {
-            if (dispozing)
-            {
-                // Clean up the tracelogger and util objects
-                tl.Enabled = false;
-                tl.Dispose();
-                tl = null;
-            }
+            // Deliberately not touching `tl` here. It's an alias for
+            // VantagePro.tl, a process-wide singleton shared by every Fetcher
+            // subclass and every ObservingConditions COM wrapper instance --
+            // ASCOM clients construct/dispose these routinely (Chooser
+            // previews, connect/disconnect cycles), and disposing + nulling
+            // the shared logger on the first one to go away used to silently
+            // kill tracing for the rest of the process, including for
+            // instances created afterwards (their constructor just re-reads
+            // the same, by-then-disposed, VantagePro.tl reference).
         }
 
         public void Dispose()

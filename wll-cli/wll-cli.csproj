@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Standalone command-line harness for WeatherLinkLiveParser, the same
+    fetch/parse/unit-conversion code the real driver uses for the JSON
+    protocol (VantagePro.IPProtocolMode.Json), with zero dependency on
+    ASCOM.Utilities (Profile/Util/TraceLogger all need Microsoft.VisualBasic
+    at runtime, which Debian's Mono package doesn't ship). That means this
+    project builds and runs anywhere .NET Framework 4.7.2 code can run,
+    including under plain Mono on Linux with no ASCOM Platform installed,
+    so you can point it straight at a real WeatherLink Live hub (or rtldavis's
+    emulation of one) and see exactly what the driver would parse out of its
+    response, independent of MaximDL/TheSkyX/COM registration entirely.
+
+    Build (from this directory):
+      dotnet build -f net472 /p:FrameworkPathOverride=(path to net472 reference assemblies)
+    Run:
+      mono bin/Debug/net472/wll-cli.exe host [port] [raw flag] [loop flag] [interval flag, seconds]
+      (run with no arguments to see the exact flag names)
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net472</TargetFramework>
+    <AssemblyName>wll-cli</AssemblyName>
+    <RootNamespace>ASCOM.VantagePro.WllCli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../WeatherLinkLiveParser.cs" />
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>../packages/Newtonsoft.Json.12.0.2/lib/net45/Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>
