@@ -1,0 +1,111 @@
+name: Release
+
+# Every push to master (including a merged PR) bumps the patch version,
+# builds the driver + Windows installer, tags the commit, and publishes a
+# GitHub Release with the installer attached.
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        shell: bash
+        run: |
+          git fetch --tags --force
+          # `|| true`: with no tags yet (the first-ever run), grep matches nothing
+          # and exits 1; combined with this shell's default `-o pipefail`, that
+          # would otherwise abort the whole step even though "no tags yet" is
+          # the expected, handled case below.
+          latest=$(git tag -l 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | sort -V | tail -1) || true
+          if [ -z "$latest" ]; then
+            next="1.3.0"
+          else
+            major=$(echo "$latest" | cut -d. -f1)
+            minor=$(echo "$latest" | cut -d. -f2)
+            patch=$(echo "$latest" | cut -d. -f3)
+            next="$major.$minor.$((patch + 1))"
+          fi
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "tag=v$next" >> "$GITHUB_OUTPUT"
+          echo "Previous tag: ${latest:-none}; next version: $next"
+
+      # AssemblyVersion is normally "1.2.*" (build/revision auto-generated from
+      # the compile timestamp) and AssemblyFileVersion is commented out, so the
+      # installer's version string (read from the built DLL's FileVersion via
+      # the .iss's GetStringFileInfo call) wouldn't match our release tag. Stamp
+      # both explicitly for this build only -- not committed back.
+      - name: Stamp assembly version
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}.0"
+          $path = "Properties/AssemblyInfo.cs"
+          $content = Get-Content $path -Raw
+          $content = $content -replace 'AssemblyVersion\("[^"]*"\)', "AssemblyVersion(`"$version`")"
+          $content = $content -replace '//\s*\[assembly: AssemblyFileVersion\("[^"]*"\)\]', "[assembly: AssemblyFileVersion(`"$version`")]"
+          Set-Content -Path $path -Value $content -NoNewline
+          Select-String -Path $path -Pattern "AssemblyVersion|AssemblyFileVersion"
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Restore NuGet packages
+        run: nuget restore VantagePro.csproj -PackagesDirectory packages
+
+      - name: Build driver
+        run: msbuild VantagePro.csproj /p:Configuration=Release /p:Platform=AnyCPU /p:RegisterForComInterop=false /verbosity:minimal
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+
+      - name: Build installer
+        shell: cmd
+        run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "VantagePro Setup.iss"'
+
+      - name: Locate installer
+        id: installer
+        shell: bash
+        # Construct the exact filename rather than globbing "Solution Items"/*.exe:
+        # that folder already has a hand-built "VantagePro Setup 1.2.exe" checked
+        # into git from a past release, and a glob could non-deterministically
+        # pick that stale file instead of the one ISCC just built this run.
+        run: |
+          exe="Solution Items/VantagePro Setup ${{ steps.version.outputs.version }}.0.exe"
+          if [ ! -f "$exe" ]; then
+            echo "Expected installer not found: $exe" >&2
+            ls -la "Solution Items"
+            exit 1
+          fi
+          echo "path=$exe" >> "$GITHUB_OUTPUT"
+          echo "Built installer: $exe"
+
+      - name: Tag release commit
+        run: |
+          git tag ${{ steps.version.outputs.tag }}
+          git push origin ${{ steps.version.outputs.tag }}
+
+      - name: Create GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create ${{ steps.version.outputs.tag }} `
+            "${{ steps.installer.outputs.path }}" `
+            --title "ASCOM VantagePro Driver ${{ steps.version.outputs.tag }}" `
+            --generate-notes

@@ -23,11 +23,14 @@ DefaultDirName="{commoncf}\ASCOM\ObservingConditions"
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 OutputDir="Solution Items"
-OutputBaseFilename="VantagePro Setup 1.2"
+OutputBaseFilename="VantagePro Setup {#asmbVersion}"
 Compression=lzma
 SolidCompression=yes
-; Put there by Platform if Driver Installer Support selected
-WizardImageFile="C:\Program Files (x86)\ASCOM\Platform 6 Developer Components\Installer Generator\Resources\WizardImage.bmp"
+; Vendored in-repo (Resources\ASCOM.bmp) rather than pointing at the ASCOM
+; Platform Developer Components' own copy of this file -- a CI build
+; wouldn't have the full Developer Components installed, only the
+; ASCOM.Platform NuGet package's reference assemblies.
+WizardImageFile="Resources\ASCOM.bmp"
 LicenseFile="Resources\LICENSE.GPL3"
 ; {cf}\ASCOM\Uninstall\ObservingConditions folder created by Platform, always
 UninstallFilesDir="{commoncf}\ASCOM\Uninstall\ObservingConditions\VantagePro"
