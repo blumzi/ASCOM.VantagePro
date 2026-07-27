@@ -73,10 +73,13 @@ namespace ASCOM.VantagePro
             socketFetcher.WriteLowerProfile();
             serialPortFetcher.WriteLowerProfile();
 
-            serialPortFetcher = null;
-            socketFetcher = null;
-            fileFetcher = null;
-            vantagePro = null;
+            // Not nulling serialPortFetcher/socketFetcher/fileFetcher/vantagePro here
+            // deliberately: cmdOK is a DialogResult button, so clicking it normally
+            // closes this ShowDialog()'d form right after this handler returns -- but
+            // if that doesn't happen (or the dialog otherwise stays open), a
+            // subsequent "Test configuration" click on now-null fetcher fields threw
+            // an unguarded NullReferenceException. The form's own Dispose() cleans
+            // these up regardless; there's no benefit to nulling them early.
         }
 
         private void cmdCancel_Click(object sender, EventArgs e) // Cancel button event handler
@@ -210,17 +213,29 @@ namespace ASCOM.VantagePro
 
             VantagePro.tl.Enabled = chkTrace.Checked;
             buttonTest.Text = "Testing ...";
-            if (radioButtonReportFile.Checked)
+            try
             {
-                fileFetcher.Test(textBoxReportFile.Text, ref result, ref resultColor);
+                if (radioButtonReportFile.Checked)
+                {
+                    fileFetcher.Test(textBoxReportFile.Text, ref result, ref resultColor);
+                }
+                else if (radioButtonSerialPort.Checked)
+                {
+                    serialPortFetcher.Test(comboBoxComPort.Text, ref result, ref resultColor);
+                }
+                else if (radioButtonIP.Checked)
+                {
+                    socketFetcher.Test(textBoxIPAddress.Text, textBoxIPPort.Text, ref result, ref resultColor);
+                }
             }
-            else if (radioButtonSerialPort.Checked)
+            catch (Exception ex)
             {
-                serialPortFetcher.Test(comboBoxComPort.Text, ref result, ref resultColor);
-            }
-            else if (radioButtonIP.Checked)
-            {
-                socketFetcher.Test(textBoxIPAddress.Text, textBoxIPPort.Text, ref result, ref resultColor);
+                // Surface the real exception instead of letting it escape to the
+                // unhandled-exception dialog, which collapses the stack down to
+                // just this handler and hides which fetcher/field was actually null.
+                result = $"{ex.GetType().Name}: {ex.Message}\n\n{ex.StackTrace}";
+                resultColor = VantagePro.colorError;
+                VantagePro.LogMessage("buttonTest_Click", $"Test threw: {result}");
             }
 
             if (resultColor == VantagePro.colorGood)
